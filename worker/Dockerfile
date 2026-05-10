@@ -12,10 +12,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   && apt-get remove -y wget && apt-get autoremove -y \
   && rm -rf /var/lib/apt/lists/*
 
-# Pre-download Trivy vulnerability DB so no network needed at scan time
+# Pre-download Trivy vulnerability DB into /trivy-cache
+# --cache-dir is a global flag and must come before the subcommand
 RUN mkdir -p /trivy-cache && chmod 777 /trivy-cache
 ENV TRIVY_CACHE_DIR=/trivy-cache
-RUN trivy image --download-db-only --cache-dir /trivy-cache
+RUN trivy --cache-dir /trivy-cache image --download-db-only
 
 COPY requirements.txt .
 
