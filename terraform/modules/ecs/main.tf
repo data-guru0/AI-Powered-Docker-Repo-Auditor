@@ -181,7 +181,7 @@ resource "aws_security_group" "alb_backend" {
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
-    cidr_blocks = [var.vpc_cidr]
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   ingress {
@@ -421,7 +421,7 @@ resource "aws_ecs_task_definition" "backend" {
       environment = [
         { name = "ENVIRONMENT", value = var.environment },
         { name = "PROJECT_NAME", value = var.project_name },
-        { name = "AWS_REGION_NAME", value = var.aws_region },
+        { name = "AWS_REGION", value = var.aws_region },
         { name = "FRONTEND_URL", value = "http://${aws_lb.frontend.dns_name}" },
         { name = "COGNITO_USER_POOL_ID", value = var.cognito_user_pool_id },
         { name = "COGNITO_CLIENT_ID", value = var.cognito_client_id },
@@ -487,7 +487,7 @@ resource "aws_ecs_task_definition" "worker" {
       environment = [
         { name = "ENVIRONMENT", value = var.environment },
         { name = "PROJECT_NAME", value = var.project_name },
-        { name = "AWS_REGION_NAME", value = var.aws_region },
+        { name = "AWS_REGION", value = var.aws_region },
         { name = "DYNAMODB_SCAN_JOBS_TABLE", value = var.scan_jobs_table },
         { name = "DYNAMODB_SCAN_RESULTS_TABLE", value = var.scan_results_table },
         { name = "DYNAMODB_WS_CONNECTIONS_TABLE", value = var.ws_connections_table },
@@ -500,6 +500,7 @@ resource "aws_ecs_task_definition" "worker" {
         { name = "TRIVY_LAMBDA_FUNCTION_NAME", value = var.trivy_lambda_name },
         { name = "WEBSOCKET_API_ENDPOINT", value = var.websocket_execution_arn },
         { name = "SES_FROM_EMAIL", value = var.ses_from_email },
+        { name = "SECRET_PREFIX", value = var.secret_prefix },
         { name = "OPENAI_API_KEY_SECRET_NAME", value = var.openai_secret_name },
         { name = "LANGSMITH_API_KEY_SECRET_NAME", value = var.langsmith_secret_name },
         { name = "LANGCHAIN_TRACING_V2", value = "true" },
