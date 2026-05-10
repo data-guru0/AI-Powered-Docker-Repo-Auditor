@@ -145,8 +145,8 @@ export default function RepoDashboardPage() {
                 <ImageInventoryCard repoId={repoId} />
                 <CriticalAlertsCard cveCount={scanResult.cveCount} />
                 <SizeOverviewCard totalSizeReduction={scanResult.totalSizeReduction} />
-                <BaseImageHealthCard repoId={repoId} />
-                <TopRiskiestCard repoId={repoId} />
+                <BaseImageHealthCard scan={scanResult} />
+                <TopRiskiestCard repoId={repoId} scan={scanResult} />
                 <AIRecommendationsCard topActions={scanResult.topActions} />
                 <div className="sm:col-span-2">
                   <ScanHistoryChart repoId={repoId} />
@@ -154,7 +154,7 @@ export default function RepoDashboardPage() {
                 <CVEBreakdownChart cveCount={scanResult.cveCount} />
                 <LayerBloatHeatmap repoId={repoId} />
                 <UnusedImagesCard repoId={repoId} />
-                <ComplianceStatusCard repoId={repoId} />
+                <ComplianceStatusCard scan={scanResult} />
                 <CostIntelligenceCard repoId={repoId} />
               </div>
 

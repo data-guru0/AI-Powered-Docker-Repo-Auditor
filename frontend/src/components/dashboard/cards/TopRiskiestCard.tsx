@@ -2,26 +2,20 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { imagesApi, scansApi } from "@/lib/api";
+import { imagesApi } from "@/lib/api";
 import type { ImageTag } from "@/types/registry";
 import type { ScanResult } from "@/types/scan";
 
 interface TopRiskiestCardProps {
   repoId: string;
+  scan: ScanResult | null;
 }
 
-export function TopRiskiestCard({ repoId }: TopRiskiestCardProps) {
+export function TopRiskiestCard({ repoId, scan }: TopRiskiestCardProps) {
   const [images, setImages] = useState<ImageTag[]>([]);
-  const [scan, setScan] = useState<ScanResult | null>(null);
 
   useEffect(() => {
-    Promise.all([
-      imagesApi.list(repoId),
-      scansApi.getLatestScan(repoId),
-    ]).then(([imgs, s]) => {
-      setImages(imgs);
-      setScan(s);
-    }).catch(() => {});
+    imagesApi.list(repoId).then(setImages).catch(() => {});
   }, [repoId]);
 
   const riskiest = images

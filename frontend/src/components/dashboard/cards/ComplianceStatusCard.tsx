@@ -1,20 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { scansApi } from "@/lib/api";
 import type { ScanResult } from "@/types/scan";
 
 interface ComplianceStatusCardProps {
-  repoId: string;
+  scan: ScanResult | null;
 }
 
-export function ComplianceStatusCard({ repoId }: ComplianceStatusCardProps) {
-  const [scan, setScan] = useState<ScanResult | null>(null);
-
-  useEffect(() => {
-    scansApi.getLatestScan(repoId).then(setScan).catch(() => {});
-  }, [repoId]);
-
+export function ComplianceStatusCard({ scan }: ComplianceStatusCardProps) {
   const complianceFindings = scan?.findings.filter(
     (f) => f.category === "compliance"
   ) || [];
