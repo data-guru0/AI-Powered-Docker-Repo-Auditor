@@ -26,7 +26,7 @@ async def list_dockerhub_repos(user_id: str) -> list[Repository]:
             for r in data.get("results", []):
                 repos.append(
                     Repository(
-                        id=f"dh-{r['namespace']}-{r['name']}",
+                        id=f"{r['namespace']}/{r['name']}",
                         name=f"{r['namespace']}/{r['name']}",
                         registryType=RegistryType.DOCKERHUB,
                         imageCount=r.get("pull_count", 0),
@@ -82,7 +82,7 @@ async def list_ecr_repos(user_id: str) -> list[Repository]:
             )
             repos.append(
                 Repository(
-                    id=f"ecr-{r['repositoryName']}",
+                    id=r["repositoryName"],
                     name=r["repositoryName"],
                     registryType=RegistryType.ECR,
                     imageCount=len(images.get("imageDetails", [])),

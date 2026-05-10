@@ -52,9 +52,7 @@ function scoreReasons(scan: ScanResult) {
       : "Base image is current";
 
   // Best Practices
-  const bpFindings = findings.filter(
-    (f) => f.category === "best_practice" || f.category === "best-practice"
-  );
+  const bpFindings = findings.filter((f) => f.category === "best_practice");
   const bestPracticesReason =
     bpFindings.length > 0
       ? `${bpFindings.length} best practice violation${bpFindings.length > 1 ? "s" : ""}`
