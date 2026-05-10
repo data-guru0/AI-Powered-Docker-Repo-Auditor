@@ -155,7 +155,6 @@ module "ecs" {
   scan_results_table       = module.database.scan_results_table_name
   connections_table        = module.database.connections_table_name
   ws_connections_table     = module.database.ws_connections_table_name
-  chat_history_table       = module.database.chat_history_table_name
   scan_jobs_queue_url      = module.queue.scan_jobs_queue_url
   scan_reports_bucket      = module.storage.scan_reports_bucket_name
   redis_url                = module.cache.redis_url

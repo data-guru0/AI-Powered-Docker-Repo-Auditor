@@ -9,7 +9,6 @@ import type {
   LayerInfo,
 } from "@/types/registry";
 import type { ScanJob, ScanResult, ScoreHistory } from "@/types/scan";
-import type { ChatRequest, ChatMessage } from "@/types/agent";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -99,10 +98,3 @@ export const imagesApi = {
     request(`/api/v1/images/${repoId}/${imageId}/layers`),
 };
 
-export const chatApi = {
-  send: (payload: ChatRequest): Promise<ChatMessage> =>
-    request("/api/v1/chat", {
-      method: "POST",
-      body: JSON.stringify(payload),
-    }),
-};

@@ -133,32 +133,6 @@ resource "aws_dynamodb_table" "ws_connections" {
   tags = merge(var.tags, { Name = "${var.project_name}-${var.environment}-ws-connections" })
 }
 
-resource "aws_dynamodb_table" "chat_history" {
-  name         = "${var.project_name}-${var.environment}-chat-history"
-  billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "session_id"
-  range_key    = "timestamp"
-
-  attribute {
-    name = "session_id"
-    type = "S"
-  }
-
-  attribute {
-    name = "timestamp"
-    type = "S"
-  }
-
-  ttl {
-    attribute_name = "expires_at"
-    enabled        = true
-  }
-
-  server_side_encryption { enabled = true }
-
-  tags = merge(var.tags, { Name = "${var.project_name}-${var.environment}-chat-history" })
-}
-
 resource "aws_iam_policy" "dynamodb_full" {
   name        = "${var.project_name}-${var.environment}-dynamodb-full"
   description = "Full access to application DynamoDB tables"
@@ -186,8 +160,7 @@ resource "aws_iam_policy" "dynamodb_full" {
           aws_dynamodb_table.connections.arn,
           "${aws_dynamodb_table.connections.arn}/index/*",
           aws_dynamodb_table.ws_connections.arn,
-          "${aws_dynamodb_table.ws_connections.arn}/index/*",
-          aws_dynamodb_table.chat_history.arn
+          "${aws_dynamodb_table.ws_connections.arn}/index/*"
         ]
       }
     ]

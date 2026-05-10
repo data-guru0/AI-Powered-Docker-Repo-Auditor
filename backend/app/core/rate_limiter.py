@@ -57,6 +57,3 @@ def scan_rate_limit(user: dict = Depends(get_current_user)) -> dict:
     return user
 
 
-def chat_rate_limit(user: dict = Depends(get_current_user)) -> dict:
-    _check_limit(user["user_id"], "chat", limit=20, window_seconds=3600)
-    return user

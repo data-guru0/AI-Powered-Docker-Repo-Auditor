@@ -15,7 +15,6 @@ variable "scan_jobs_table" { type = string }
 variable "scan_results_table" { type = string }
 variable "connections_table" { type = string }
 variable "ws_connections_table" { type = string }
-variable "chat_history_table" { type = string }
 variable "scan_jobs_queue_url" { type = string }
 variable "scan_reports_bucket" { type = string }
 variable "redis_url" { type = string }

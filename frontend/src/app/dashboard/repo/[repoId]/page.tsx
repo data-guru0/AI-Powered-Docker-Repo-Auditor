@@ -19,7 +19,6 @@ import { AIRecommendationsCard } from "@/components/dashboard/cards/AIRecommenda
 import { ComplianceStatusCard } from "@/components/dashboard/cards/ComplianceStatusCard";
 import { CostIntelligenceCard } from "@/components/dashboard/cards/CostIntelligenceCard";
 import { ScanProgress } from "@/components/ui/ScanProgress";
-import { ChatAgent } from "@/components/ui/ChatAgent";
 import type { ScanResult } from "@/types/scan";
 
 function scoreReasons(scan: ScanResult) {
@@ -68,7 +67,6 @@ export default function RepoDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [scanning, setScanning] = useState(false);
   const [currentJobId, setCurrentJobId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"dashboard" | "chat">("dashboard");
   const [error, setError] = useState<string | null>(null);
 
   const loadLatestScan = useCallback(async () => {
@@ -131,12 +129,6 @@ export default function RepoDashboardPage() {
         </div>
         <div className="flex items-center gap-3">
           <button
-            onClick={() => setActiveTab(activeTab === "dashboard" ? "chat" : "dashboard")}
-            className="px-4 py-2 rounded-lg border border-surface-border text-text-secondary text-sm hover:text-text-primary hover:border-surface-border-bright transition-colors"
-          >
-            {activeTab === "dashboard" ? "Chat Agent" : "Dashboard"}
-          </button>
-          <button
             onClick={startScan}
             disabled={scanning}
             className="px-4 py-2 rounded-lg bg-accent-cyan text-bg-base font-semibold text-sm hover:bg-accent-cyan-dim transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -156,9 +148,7 @@ export default function RepoDashboardPage() {
         <ScanProgress jobId={currentJobId} onComplete={onScanComplete} />
       )}
 
-      {activeTab === "chat" ? (
-        <ChatAgent repoId={repoId} />
-      ) : scanResult ? (
+      {scanResult ? (
         <>
           {scanResult.blocked && (
             <div className="p-4 rounded-lg bg-severity-critical/10 border border-severity-critical/30 text-severity-critical text-sm font-medium">
