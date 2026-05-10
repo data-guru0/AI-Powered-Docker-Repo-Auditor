@@ -49,7 +49,7 @@ jobs:
             echo "environment=${{ github.event.inputs.environment }}" >> "$GITHUB_OUTPUT"
             echo "action=${{ github.event.inputs.action }}" >> "$GITHUB_OUTPUT"
           elif [ "${{ github.ref }}" == "refs/heads/main" ]; then
-            echo "environment=prod" >> "$GITHUB_OUTPUT"
+            echo "environment=dev" >> "$GITHUB_OUTPUT"
             echo "action=apply" >> "$GITHUB_OUTPUT"
           else
             echo "environment=dev" >> "$GITHUB_OUTPUT"
