@@ -1,28 +1,17 @@
 import os
 import logging
-from opentelemetry import trace
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor, SpanExporter
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
 logger = logging.getLogger(__name__)
 
 
-def _build_exporter() -> SpanExporter:
-    endpoint = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
-    if endpoint:
-        try:
-            from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
-            return OTLPSpanExporter(endpoint=endpoint)
-        except Exception as exc:
-            logger.warning("OTLP exporter failed, falling back to console: %s", exc)
-    from opentelemetry.sdk.trace.export import ConsoleSpanExporter
-    return ConsoleSpanExporter()
-
-
 def setup_telemetry(app) -> None:
     try:
+        from opentelemetry import trace
+        from opentelemetry.sdk.trace import TracerProvider
+        from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
+        from opentelemetry.sdk.resources import Resource
+        from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+
         resource = Resource.create({
             "service.name": "docker-auditor-backend",
             "service.version": "1.0.0",
@@ -32,12 +21,21 @@ def setup_telemetry(app) -> None:
         try:
             from opentelemetry.sdk.extension.aws.trace import AwsXRayIdGenerator
             kwargs["id_generator"] = AwsXRayIdGenerator()
-            logger.info("Using AWS X-Ray ID generator")
         except ImportError:
             pass
 
+        endpoint = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
+        if endpoint:
+            try:
+                from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+                exporter = OTLPSpanExporter(endpoint=endpoint)
+            except Exception:
+                exporter = ConsoleSpanExporter()
+        else:
+            exporter = ConsoleSpanExporter()
+
         provider = TracerProvider(**kwargs)
-        provider.add_span_processor(BatchSpanProcessor(_build_exporter()))
+        provider.add_span_processor(BatchSpanProcessor(exporter))
         trace.set_global_tracer_provider(provider)
 
         FastAPIInstrumentor.instrument_app(
