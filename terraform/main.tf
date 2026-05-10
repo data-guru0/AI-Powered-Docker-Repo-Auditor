@@ -194,6 +194,10 @@ resource "aws_apigatewayv2_integration" "backend" {
   api_id           = module.api.websocket_api_id
   integration_type = "AWS_PROXY"
   integration_uri  = module.api.ws_connect_invoke_arn
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 # Lambda integration for $disconnect
@@ -201,6 +205,10 @@ resource "aws_apigatewayv2_integration" "ws_disconnect" {
   api_id           = module.api.websocket_api_id
   integration_type = "AWS_PROXY"
   integration_uri  = module.api.ws_disconnect_invoke_arn
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_apigatewayv2_integration" "ws_message" {
