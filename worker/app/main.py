@@ -42,12 +42,12 @@ async def process_message(message: dict) -> None:
 
 async def poll_sqs() -> None:
     client = get_sqs_client()
-    logger.info("Worker started, polling SQS queue: %s", settings.SQS_SCAN_QUEUE_URL)
+    logger.info("Worker started, polling SQS queue: %s", settings.SQS_SCAN_JOBS_URL)
 
     while not _shutdown.is_set():
         try:
             resp = client.receive_message(
-                QueueUrl=settings.SQS_SCAN_QUEUE_URL,
+                QueueUrl=settings.SQS_SCAN_JOBS_URL,
                 MaxNumberOfMessages=1,
                 WaitTimeSeconds=20,
                 VisibilityTimeout=900,
@@ -60,7 +60,7 @@ async def poll_sqs() -> None:
                 try:
                     await process_message(msg)
                     client.delete_message(
-                        QueueUrl=settings.SQS_SCAN_QUEUE_URL,
+                        QueueUrl=settings.SQS_SCAN_JOBS_URL,
                         ReceiptHandle=msg["ReceiptHandle"],
                     )
                 except Exception as exc:
@@ -75,8 +75,8 @@ async def main() -> None:
     os.environ["OPENAI_API_KEY"] = get_openai_api_key()
     os.environ["LANGCHAIN_API_KEY"] = get_langsmith_api_key()
     os.environ["LANGCHAIN_TRACING_V2"] = settings.LANGCHAIN_TRACING_V2
-    os.environ["LANGCHAIN_PROJECT"] = settings.LANGSMITH_PROJECT
-    os.environ["LANGCHAIN_ENDPOINT"] = settings.LANGCHAIN_ENDPOINT
+    os.environ["LANGCHAIN_PROJECT"] = settings.LANGCHAIN_PROJECT
+    os.environ["LANGCHAIN_ENDPOINT"] = "https://api.smith.langchain.com"
 
     signal.signal(signal.SIGTERM, _handle_signal)
     signal.signal(signal.SIGINT, _handle_signal)
