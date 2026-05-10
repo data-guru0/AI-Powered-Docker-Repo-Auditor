@@ -31,6 +31,7 @@ htmlcov/
 *.tfstate.backup
 .terraform.lock.hcl
 *.tfvars
+!environments/*.tfvars
 !environments/*.tfvars.example
 terraform.tfplan
 
