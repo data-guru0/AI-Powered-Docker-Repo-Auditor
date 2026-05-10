@@ -5,7 +5,7 @@ import logging
 from app.core.aws import get_sqs_client, get_langsmith_api_key, get_openai_api_key
 from app.core.config import settings
 from app.agents.orchestrator import run_orchestrator
-from app.services.dynamodb import update_job_status
+from app.services.dynamodb import update_job_status, init_job_record
 from app.services.websocket import publish_progress
 import os
 
@@ -26,10 +26,11 @@ async def process_message(message: dict) -> None:
     user_id = body["user_id"]
     repo_id = body["repo_id"]
     image_id = body.get("image_id")
+    started_at = body.get("started_at", "")
 
     logger.info("Processing scan job %s for repo %s", job_id, repo_id)
 
-    await update_job_status(job_id, "running", 5, "Starting scan")
+    await init_job_record(job_id, user_id, repo_id, started_at)
     await publish_progress(job_id, "running", 5, "Starting scan")
 
     try:

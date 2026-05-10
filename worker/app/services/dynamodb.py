@@ -20,6 +20,20 @@ def _table(name: str):
     return resource.Table(table_map[name])
 
 
+async def init_job_record(job_id: str, user_id: str, repo_id: str, started_at: str) -> None:
+    table = _table("scan_jobs")
+    table.put_item(Item={
+        "job_id": job_id,
+        "user_id": user_id,
+        "repo_id": repo_id,
+        "status": "running",
+        "progress": 0,
+        "currentStep": "Starting",
+        "startedAt": started_at,
+        "updatedAt": datetime.now(timezone.utc).isoformat(),
+    })
+
+
 async def update_job_status(job_id: str, status: str, progress: int, step: str) -> None:
     table = _table("scan_jobs")
     table.update_item(
