@@ -50,6 +50,7 @@ async def run_trivy_scan(
 
 async def _run_trivy_local(target: str, user_creds: dict) -> dict:
     env = os.environ.copy()
+    env.setdefault("TRIVY_CACHE_DIR", "/trivy-cache")
 
     if "accessKeyId" in user_creds:
         env["AWS_ACCESS_KEY_ID"] = user_creds["accessKeyId"]

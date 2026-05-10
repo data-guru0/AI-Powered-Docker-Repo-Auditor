@@ -12,6 +12,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   && apt-get remove -y wget && apt-get autoremove -y \
   && rm -rf /var/lib/apt/lists/*
 
+# Pre-download Trivy vulnerability DB so no network needed at scan time
+RUN mkdir -p /trivy-cache && chmod 777 /trivy-cache
+ENV TRIVY_CACHE_DIR=/trivy-cache
+RUN trivy image --download-db-only --cache-dir /trivy-cache
+
 COPY requirements.txt .
 
 FROM base AS development
@@ -22,6 +27,7 @@ CMD ["python", "-m", "app.main"]
 FROM base AS production
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
-RUN useradd -r -u 1001 workeruser
+RUN useradd -r -u 1001 -d /home/workeruser -m workeruser && \
+    chown -R workeruser:workeruser /trivy-cache
 USER workeruser
 CMD ["python", "-m", "app.main"]
