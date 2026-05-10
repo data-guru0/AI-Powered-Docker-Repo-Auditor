@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 def _secret_path(user_id: str, registry_type: str) -> str:
-    return f"{settings.SECRETS_MANAGER_PREFIX}/users/{user_id}/{registry_type}"
+    return f"{settings.SECRET_PREFIX}/users/{user_id}/{registry_type}"
 
 
 async def store_credential(user_id: str, registry_type: str, credential: dict) -> None:

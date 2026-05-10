@@ -23,7 +23,7 @@ async def dispatch_scan_job(user_id: str, repo_id: str, image_id: str | None) ->
 
     client = get_sqs_client()
     client.send_message(
-        QueueUrl=settings.SQS_SCAN_QUEUE_URL,
+        QueueUrl=settings.SQS_SCAN_JOBS_URL,
         MessageBody=json.dumps(message),
         MessageGroupId=repo_id,
         MessageDeduplicationId=job_id,

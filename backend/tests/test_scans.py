@@ -31,6 +31,6 @@ async def test_get_scan_not_found(client, mock_dynamodb):
 @pytest.mark.asyncio
 async def test_get_latest_scan_none(client, mock_dynamodb):
     mock_dynamodb.return_value.Table.return_value.query.return_value = {"Items": []}
-    response = await client.get("/api/v1/scans/latest/myorg%2Fmyrepo")
+    response = await client.get("/api/v1/scans/latest/myrepo")
     assert response.status_code == 200
     assert response.json() is None

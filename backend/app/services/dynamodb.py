@@ -8,9 +8,17 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+_TABLE_MAP = {
+    "scans": lambda: settings.DYNAMODB_SCAN_JOBS_TABLE,
+    "users": lambda: settings.DYNAMODB_CONNECTIONS_TABLE,
+    "repos": lambda: settings.DYNAMODB_CONNECTIONS_TABLE,
+    "eval_scores": lambda: settings.DYNAMODB_EVAL_RESULTS_TABLE,
+}
+
+
 def _table(name: str):
     resource = get_dynamodb_resource()
-    return resource.Table(f"{settings.DYNAMODB_TABLE_PREFIX}-{name}")
+    return resource.Table(_TABLE_MAP[name]())
 
 
 async def get_workspace_repos(user_id: str) -> list[dict]:
