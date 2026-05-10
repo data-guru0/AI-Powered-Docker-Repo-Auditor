@@ -59,17 +59,32 @@ async def run_orchestrator(
     previous_scan = await get_previous_scan(user_id, repo_id)
 
     cve_findings, bloat_findings, base_image_analysis = await asyncio.gather(
-        run_cve_analyst(trivy_results, inspector_results, previous_scan),
-        run_bloat_detective(layer_data, manifest),
-        run_base_image_strategist(manifest),
+        asyncio.wait_for(run_cve_analyst(trivy_results, inspector_results, previous_scan), timeout=120),
+        asyncio.wait_for(run_bloat_detective(layer_data, manifest), timeout=120),
+        asyncio.wait_for(run_base_image_strategist(manifest), timeout=120),
+        return_exceptions=True,
     )
+    if isinstance(cve_findings, BaseException):
+        logger.warning("CVE analyst failed/timed out: %s", cve_findings)
+        cve_findings = []
+    if isinstance(bloat_findings, BaseException):
+        logger.warning("Bloat detective failed/timed out: %s", bloat_findings)
+        bloat_findings = []
+    if isinstance(base_image_analysis, BaseException):
+        logger.warning("Base image strategist failed/timed out: %s", base_image_analysis)
+        base_image_analysis = []
 
     await publish_progress(job_id, "running", 65, "Optimizing Dockerfile")
     await update_job_status(job_id, "running", 65, "Optimizing Dockerfile")
 
-    dockerfile_result = await run_dockerfile_optimizer(
-        manifest, cve_findings, bloat_findings, base_image_analysis
-    )
+    try:
+        dockerfile_result = await asyncio.wait_for(
+            run_dockerfile_optimizer(manifest, cve_findings, bloat_findings, base_image_analysis),
+            timeout=120,
+        )
+    except asyncio.TimeoutError:
+        logger.warning("Dockerfile optimizer timed out for job %s, using empty result", job_id)
+        dockerfile_result = {"original": "", "optimized": "", "changes": []}
 
     await publish_progress(job_id, "running", 80, "Calculating risk scores")
     await update_job_status(job_id, "running", 80, "Calculating risk scores")
@@ -77,9 +92,19 @@ async def run_orchestrator(
     all_findings = merge_findings(cve_findings, bloat_findings, base_image_analysis)
     all_findings = deduplicate_findings(all_findings)
 
-    risk_result = await run_risk_scorer(
-        cve_findings, bloat_findings, base_image_analysis, all_findings, previous_scan
-    )
+    try:
+        risk_result = await asyncio.wait_for(
+            run_risk_scorer(cve_findings, bloat_findings, base_image_analysis, all_findings, previous_scan),
+            timeout=120,
+        )
+    except asyncio.TimeoutError:
+        logger.warning("Risk scorer timed out for job %s, using default scores", job_id)
+        risk_result = {
+            "scores": {"security": 50, "bloat": 50, "freshness": 50, "bestPractices": 50, "overall": "C"},
+            "topActions": [],
+            "executiveSummary": "Risk scoring timed out.",
+            "blocked": False,
+        }
 
     await publish_progress(job_id, "running", 90, "Storing results")
     await update_job_status(job_id, "running", 90, "Storing results")

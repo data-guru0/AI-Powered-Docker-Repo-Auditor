@@ -34,7 +34,7 @@ class CVEState(TypedDict):
 
 
 async def _analyze_node(state: CVEState) -> CVEState:
-    llm = ChatOpenAI(model="gpt-4o", temperature=0)
+    llm = ChatOpenAI(model="gpt-4o", temperature=0, timeout=90)
 
     trivy_summary = json.dumps(state["trivy_data"], indent=2)[:8000]
     inspector_summary = json.dumps(state["inspector_data"], indent=2)[:4000]

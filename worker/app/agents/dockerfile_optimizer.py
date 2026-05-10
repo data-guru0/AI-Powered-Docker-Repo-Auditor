@@ -44,7 +44,7 @@ class DockerfileState(TypedDict):
 
 
 async def _optimize_node(state: DockerfileState) -> DockerfileState:
-    llm = ChatOpenAI(model="gpt-4o", temperature=0)
+    llm = ChatOpenAI(model="gpt-4o", temperature=0, timeout=90)
 
     manifest_str = json.dumps(state["manifest"], indent=2)[:3000]
     cve_str = json.dumps(state["cve_findings"][:10], indent=2)[:3000]

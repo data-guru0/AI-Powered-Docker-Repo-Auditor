@@ -35,7 +35,7 @@ class BaseImageState(TypedDict):
 
 
 async def _strategize_node(state: BaseImageState) -> BaseImageState:
-    llm = ChatOpenAI(model="gpt-4o", temperature=0)
+    llm = ChatOpenAI(model="gpt-4o", temperature=0, timeout=90)
 
     manifest_summary = json.dumps(state["manifest"], indent=2)[:6000]
 

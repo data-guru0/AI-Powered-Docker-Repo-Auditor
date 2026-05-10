@@ -38,7 +38,7 @@ class RiskState(TypedDict):
 
 
 async def _score_node(state: RiskState) -> RiskState:
-    llm = ChatOpenAI(model="gpt-4o", temperature=0)
+    llm = ChatOpenAI(model="gpt-4o", temperature=0, timeout=90)
 
     cve_critical = sum(
         1 for f in state["cve_findings"] if f.get("severity") == "critical"

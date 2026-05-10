@@ -32,7 +32,7 @@ class BloatState(TypedDict):
 
 
 async def _detect_bloat_node(state: BloatState) -> BloatState:
-    llm = ChatOpenAI(model="gpt-4o", temperature=0)
+    llm = ChatOpenAI(model="gpt-4o", temperature=0, timeout=90)
 
     layers_summary = json.dumps(state["layer_data"], indent=2)[:8000]
     manifest_summary = json.dumps(state["manifest"], indent=2)[:3000]
