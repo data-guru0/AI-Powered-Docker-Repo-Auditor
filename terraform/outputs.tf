@@ -1,3 +1,13 @@
+output "github_deploy_role_arn" {
+  value       = module.iam.github_deploy_role_arn
+  description = "ARN for AWS_DEPLOY_ROLE_ARN GitHub secret"
+}
+
+output "github_terraform_role_arn" {
+  value       = module.iam.github_terraform_role_arn
+  description = "ARN for AWS_TERRAFORM_ROLE_ARN GitHub secret"
+}
+
 output "frontend_url" {
   value       = "http://${module.ecs.frontend_alb_dns}"
   description = "Frontend application URL"

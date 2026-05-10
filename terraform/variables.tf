@@ -78,6 +78,17 @@ variable "alarm_email" {
   default = ""
 }
 
+variable "github_org" {
+  type        = string
+  description = "GitHub username or organization"
+}
+
+variable "github_repo" {
+  type        = string
+  default     = "docker-image-auditor"
+  description = "GitHub repository name"
+}
+
 variable "tags" {
   type    = map(string)
   default = {}

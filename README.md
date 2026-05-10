@@ -53,6 +53,8 @@ Go to terraform\environments\dev.tfvars
 ```hcl
 aws_account_id = "YOUR_ACCOUNT_ID"
 ses_from_email = "noreply@yourdomain.com"
+github_org         = "data-guru0"
+github_repo        = "TESTING-MAJOR-22"
 ```
 ```bash
 aws sts get-caller-identity
@@ -66,9 +68,12 @@ Click on the link and your email is verified !!!
 
 
 
-### Bootstrap Terraform state
+### These should exist for Terraform running
 
 Run once to create the S3 bucket and DynamoDB table for Terraform remote state:
+```bash
+aws iam create-open-id-connect-provider --url https://token.actions.githubusercontent.com --client-id-list sts.amazonaws.com --thumbprint-list 1b511abead59c6ce207077c0bf0e0043b1382612
+```
 
 ```bash
 aws s3 mb s3://docker-auditor-terraform-state-789438508565 --region us-east-1
@@ -151,20 +156,28 @@ git remote add origin https://github.com/YOUR_GITHUB_USERNAME/docker-image-audit
 git push -u origin main
 ```
 
-### Step 6: Store API keys in Secrets Manager
+### Add Github Secrets
 
-```bash
-OPENAI_SECRET=$(terraform output -raw openai_secret_name)
-LANGSMITH_SECRET=$(terraform output -raw langsmith_secret_name)
+GitHub → Settings → Secrets and variables → Actions → New repository secret
 
-aws secretsmanager put-secret-value \
-  --secret-id "$OPENAI_SECRET" \
-  --secret-string '{"api_key":"sk-..."}'
 
-aws secretsmanager put-secret-value \
-  --secret-id "$LANGSMITH_SECRET" \
-  --secret-string '{"api_key":"ls__..."}'
-```
+Add the following 5 secrets to the repository:
+
+| Secret Name | Value |
+|---|---|
+| `AWS_DEPLOY_ROLE_ARN` | `arn:aws:iam::789438508565:role/docker-auditor-dev-github-deploy` |
+| `AWS_TERRAFORM_ROLE_ARN` | `arn:aws:iam::789438508565:role/docker-auditor-dev-github-terraform` |
+| `AWS_ACCOUNT_ID` | `789438508565` |
+| `TF_STATE_BUCKET` | `docker-auditor-terraform-state-789438508565` |
+| `TF_LOCK_TABLE` | `docker-auditor-terraform-locks` |
+
+
+- TF_STATE_BUCKET is the S3 bucket
+- TF_LOCK_TABLE is the DynamoDB Table name
+
+
+
+
 
 ### Step 7: Build and push initial images
 

@@ -17,6 +17,17 @@ locals {
   })
 }
 
+module "iam" {
+  source = "./modules/iam"
+
+  project_name   = var.project_name
+  environment    = var.environment
+  aws_account_id = var.aws_account_id
+  github_org     = var.github_org
+  github_repo    = var.github_repo
+  tags           = local.common_tags
+}
+
 module "networking" {
   source = "./modules/networking"
 
