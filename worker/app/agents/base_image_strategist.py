@@ -52,11 +52,12 @@ Analyze the base image and return JSON with "analysis" and "findings" keys."""
     try:
         response = await llm.ainvoke(messages)
         content = response.content.strip()
-        if content.startswith("```"):
-            content = content.split("```")[1]
+        if "```" in content:
+            parts = content.split("```")
+            content = parts[1] if len(parts) > 1 else parts[0]
             if content.startswith("json"):
                 content = content[4:]
-        result = json.loads(content)
+        result = json.loads(content.strip())
         analysis = result.get("analysis", {})
         findings = result.get("findings", [])
         for f in findings:

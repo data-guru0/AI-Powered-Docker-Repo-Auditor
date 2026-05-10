@@ -1,4 +1,5 @@
 import asyncio
+import math
 from typing import Any
 from app.services.dynamodb import store_eval_scores
 from app.services.s3 import upload_eval_log
@@ -51,13 +52,17 @@ async def run_ragas_evaluation(
                 scores_df = result.to_pandas()
                 avg_scores = scores_df.mean(numeric_only=True).to_dict()
 
+                def _safe(v: float) -> float:
+                    return 0.0 if (math.isnan(v) or math.isinf(v)) else v
+
+                faithfulness = _safe(float(avg_scores.get("faithfulness", 0.0)))
                 eval_scores[agent_name] = {
-                    "faithfulness": float(avg_scores.get("faithfulness", 0.0)),
-                    "answer_relevancy": float(avg_scores.get("answer_relevancy", 0.0)),
-                    "hallucination_score": float(1.0 - avg_scores.get("faithfulness", 1.0)),
-                    "context_precision": float(avg_scores.get("context_precision", 0.0)),
-                    "context_recall": float(avg_scores.get("context_recall", 0.0)),
-                    "answer_correctness": float(avg_scores.get("answer_correctness", 0.0)),
+                    "faithfulness": faithfulness,
+                    "answer_relevancy": _safe(float(avg_scores.get("answer_relevancy", 0.0))),
+                    "hallucination_score": _safe(1.0 - faithfulness),
+                    "context_precision": _safe(float(avg_scores.get("context_precision", 0.0))),
+                    "context_recall": _safe(float(avg_scores.get("context_recall", 0.0))),
+                    "answer_correctness": _safe(float(avg_scores.get("answer_correctness", 0.0))),
                 }
             except Exception as exc:
                 logger.warning("Ragas evaluation failed for agent %s: %s", agent_name, exc)

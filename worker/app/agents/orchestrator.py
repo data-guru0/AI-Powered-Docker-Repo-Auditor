@@ -92,11 +92,11 @@ async def run_orchestrator(
     }
 
     scan_record = {
-        "scan_id": scan_id,
+        "scanId": scan_id,
         "job_id": job_id,
         "user_id": user_id,
-        "repo_id": repo_id,
-        "image_id": image_id or "",
+        "repoId": repo_id,
+        "imageId": image_id or "",
         "scores": risk_result["scores"],
         "findings": all_findings,
         "dockerfileOriginal": dockerfile_result["original"],

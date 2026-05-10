@@ -73,11 +73,12 @@ Generate the optimized Dockerfile and changes. Return JSON with "original", "opt
     try:
         response = await llm.ainvoke(messages)
         content = response.content.strip()
-        if content.startswith("```"):
-            content = content.split("```")[1]
+        if "```" in content:
+            parts = content.split("```")
+            content = parts[1] if len(parts) > 1 else parts[0]
             if content.startswith("json"):
                 content = content[4:]
-        result = json.loads(content)
+        result = json.loads(content.strip())
         for change in result.get("changes", []):
             change.setdefault("id", str(uuid.uuid4()))
         return {**state, "result": result}

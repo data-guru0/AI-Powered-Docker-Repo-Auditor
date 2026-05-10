@@ -53,11 +53,12 @@ Identify all bloat sources and return findings as JSON array."""
     try:
         response = await llm.ainvoke(messages)
         content = response.content.strip()
-        if content.startswith("```"):
-            content = content.split("```")[1]
+        if "```" in content:
+            parts = content.split("```")
+            content = parts[1] if len(parts) > 1 else parts[0]
             if content.startswith("json"):
                 content = content[4:]
-        findings = json.loads(content)
+        findings = json.loads(content.strip())
         for f in findings:
             f.setdefault("id", str(uuid.uuid4()))
             f.setdefault("agent", "bloat_detective")
