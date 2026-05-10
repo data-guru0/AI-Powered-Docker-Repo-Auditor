@@ -75,10 +75,10 @@ async def store_eval_scores(job_id: str, repo_id: str, scores: dict) -> None:
     table = _table("eval_results")
     for agent_name, agent_scores in scores.items():
         table.put_item(Item=_serialize({
-            "job_id": job_id,
+            "job_id": repo_id,
             "eval_run_id": str(uuid.uuid4()),
             "agent_name": agent_name,
-            "repo_id": repo_id,
+            "scan_id": job_id,
             "timestamp": datetime.now(timezone.utc).isoformat(),
             **agent_scores,
         }))

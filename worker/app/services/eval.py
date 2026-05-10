@@ -27,6 +27,9 @@ async def run_ragas_evaluation(
 
         eval_scores: dict[str, dict] = {}
 
+        def _safe(v: float) -> float:
+            return 0.0 if (math.isnan(v) or math.isinf(v)) else v
+
         for agent_name, agent_output in agent_outputs.items():
             if not agent_output:
                 continue
@@ -52,20 +55,18 @@ async def run_ragas_evaluation(
                 scores_df = result.to_pandas()
                 avg_scores = scores_df.mean(numeric_only=True).to_dict()
 
-                def _safe(v: float) -> float:
-                    return 0.0 if (math.isnan(v) or math.isinf(v)) else v
-
-                faithfulness = _safe(float(avg_scores.get("faithfulness", 0.0)))
+                faithfulness_score = _safe(float(avg_scores.get("faithfulness", 0.0)))
                 eval_scores[agent_name] = {
-                    "faithfulness": faithfulness,
+                    "faithfulness": faithfulness_score,
                     "answer_relevancy": _safe(float(avg_scores.get("answer_relevancy", 0.0))),
-                    "hallucination_score": _safe(1.0 - faithfulness),
+                    "hallucination_score": _safe(1.0 - faithfulness_score),
                     "context_precision": _safe(float(avg_scores.get("context_precision", 0.0))),
                     "context_recall": _safe(float(avg_scores.get("context_recall", 0.0))),
                     "answer_correctness": _safe(float(avg_scores.get("answer_correctness", 0.0))),
                 }
+                logger.info("Ragas eval done for agent %s: faithfulness=%.2f", agent_name, faithfulness_score)
             except Exception as exc:
-                logger.warning("Ragas evaluation failed for agent %s: %s", agent_name, exc)
+                logger.warning("Ragas evaluation failed for agent %s: %s", agent_name, exc, exc_info=True)
                 eval_scores[agent_name] = _default_scores()
 
         if eval_scores:
