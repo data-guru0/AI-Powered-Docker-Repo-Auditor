@@ -6,6 +6,7 @@ from typing import Optional
 from app.agents.cve_analyst import run_cve_analyst
 from app.agents.bloat_detective import run_bloat_detective
 from app.agents.base_image_strategist import run_base_image_strategist
+from app.agents.compliance_checker import run_compliance_checker
 from app.agents.dockerfile_optimizer import run_dockerfile_optimizer
 from app.agents.risk_scorer import run_risk_scorer
 from app.scanners.trivy import run_trivy_scan
@@ -58,10 +59,11 @@ async def run_orchestrator(
 
     previous_scan = await get_previous_scan(user_id, repo_id)
 
-    cve_findings, bloat_findings, base_image_analysis = await asyncio.gather(
+    cve_findings, bloat_findings, base_image_analysis, compliance_findings = await asyncio.gather(
         asyncio.wait_for(run_cve_analyst(trivy_results, inspector_results, previous_scan), timeout=120),
         asyncio.wait_for(run_bloat_detective(layer_data, manifest), timeout=120),
         asyncio.wait_for(run_base_image_strategist(manifest), timeout=120),
+        asyncio.wait_for(run_compliance_checker(manifest, trivy_results), timeout=120),
         return_exceptions=True,
     )
     if isinstance(cve_findings, BaseException):
@@ -73,6 +75,9 @@ async def run_orchestrator(
     if isinstance(base_image_analysis, BaseException):
         logger.warning("Base image strategist failed/timed out: %s", base_image_analysis)
         base_image_analysis = []
+    if isinstance(compliance_findings, BaseException):
+        logger.warning("Compliance checker failed/timed out: %s", compliance_findings)
+        compliance_findings = []
 
     await publish_progress(job_id, "running", 65, "Optimizing Dockerfile")
     await update_job_status(job_id, "running", 65, "Optimizing Dockerfile")
@@ -89,7 +94,7 @@ async def run_orchestrator(
     await publish_progress(job_id, "running", 80, "Calculating risk scores")
     await update_job_status(job_id, "running", 80, "Calculating risk scores")
 
-    all_findings = merge_findings(cve_findings, bloat_findings, base_image_analysis)
+    all_findings = merge_findings(cve_findings, bloat_findings, base_image_analysis, compliance_findings)
     all_findings = deduplicate_findings(all_findings)
 
     try:
