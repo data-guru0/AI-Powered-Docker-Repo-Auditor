@@ -521,14 +521,14 @@ resource "aws_ecs_task_definition" "worker" {
 }
 
 resource "aws_ecs_service" "frontend" {
-  name                               = "${var.project_name}-${var.environment}-frontend"
-  cluster                            = aws_ecs_cluster.main.id
-  task_definition                    = aws_ecs_task_definition.frontend.arn
-  desired_count                      = var.frontend_min_tasks
-  launch_type                        = "FARGATE"
-  platform_version                   = "LATEST"
-  health_check_grace_period_seconds  = 120
-  propagate_tags                     = "SERVICE"
+  name                              = "${var.project_name}-${var.environment}-frontend"
+  cluster                           = aws_ecs_cluster.main.id
+  task_definition                   = aws_ecs_task_definition.frontend.arn
+  desired_count                     = var.frontend_min_tasks
+  launch_type                       = "FARGATE"
+  platform_version                  = "LATEST"
+  health_check_grace_period_seconds = 120
+  propagate_tags                    = "SERVICE"
 
   network_configuration {
     subnets          = var.private_subnet_ids

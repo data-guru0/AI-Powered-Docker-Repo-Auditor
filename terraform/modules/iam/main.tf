@@ -60,8 +60,8 @@ resource "aws_iam_role_policy" "github_deploy" {
         Resource = "*"
       },
       {
-        Effect   = "Allow"
-        Action   = ["iam:PassRole"]
+        Effect = "Allow"
+        Action = ["iam:PassRole"]
         Resource = [
           "arn:aws:iam::${var.aws_account_id}:role/${var.project_name}-${var.environment}-task",
           "arn:aws:iam::${var.aws_account_id}:role/${var.project_name}-${var.environment}-task-execution"
