@@ -4,6 +4,7 @@ from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 from app.core.config import settings
 from app.core.middleware import RequestIdMiddleware
+from app.core.telemetry import setup_telemetry
 from app.api.v1.router import api_router
 from app.api.websocket import websocket_router
 import logging
@@ -26,6 +27,8 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url=None,
 )
+
+setup_telemetry(app)
 
 app.add_middleware(
     CORSMiddleware,

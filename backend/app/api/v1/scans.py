@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from app.core.auth import get_current_user
+from app.core.rate_limiter import scan_rate_limit
 from app.models.scan import StartScanRequest, ScanJob, ScanResult, ScoreHistory
 from app.services.queue import dispatch_scan_job
 from app.services.dynamodb import get_latest_scan, get_scan_result, get_scan_history
@@ -13,7 +14,7 @@ router = APIRouter()
 @router.post("", response_model=ScanJob)
 async def start_scan(
     request: StartScanRequest,
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(scan_rate_limit),
 ) -> ScanJob:
     job = await dispatch_scan_job(
         user["user_id"], request.repo_id, request.image_id

@@ -5,6 +5,7 @@ from langchain_core.messages import HumanMessage, SystemMessage, AIMessage, Base
 from langchain_core.tools import tool
 from langgraph.graph import StateGraph, END
 from langgraph.prebuilt import ToolNode
+from app.core.guardrails import validate_chat_input
 import operator
 import logging
 
@@ -105,6 +106,11 @@ async def run_chat_agent(
     repo_scope: list[str],
     scan_context: dict,
 ) -> str:
+    rejection = await validate_chat_input(message)
+    if rejection:
+        logger.info("Chat input blocked by guardrail: %s", rejection)
+        return rejection
+
     messages: list[BaseMessage] = []
     for msg in conversation_history:
         if msg["role"] == "user":
