@@ -189,7 +189,8 @@ module "ecs" {
   tags                     = local.common_tags
 }
 
-resource "aws_apigatewayv2_integration" "ws_connect" {
+# Keep original resource name so Terraform updates in-place instead of delete+recreate
+resource "aws_apigatewayv2_integration" "backend" {
   api_id             = module.api.websocket_api_id
   integration_type   = "HTTP_PROXY"
   integration_uri    = "http://${module.ecs.backend_alb_dns}/api/v1/ws/connect"
@@ -215,7 +216,7 @@ resource "aws_apigatewayv2_route" "connect" {
   route_key          = "$connect"
   authorization_type = "CUSTOM"
   authorizer_id      = module.api.websocket_authorizer_id
-  target             = "integrations/${aws_apigatewayv2_integration.ws_connect.id}"
+  target             = "integrations/${aws_apigatewayv2_integration.backend.id}"
 }
 
 resource "aws_apigatewayv2_route" "disconnect" {
