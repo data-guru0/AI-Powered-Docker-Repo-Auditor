@@ -87,7 +87,7 @@ export function LLMEvalPanel({ repoId }: LLMEvalPanelProps) {
   if (!summary) return null;
 
   const trendData = summary.trends.reduce<
-    Record<string, Record<string, number>>
+    Record<string, Record<string, string | number>>
   >((acc, t) => {
     if (!acc[t.date]) acc[t.date] = { date: t.date };
     acc[t.date][t.agentName] = Math.round(t.averageScore * 100);
