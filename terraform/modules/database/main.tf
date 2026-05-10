@@ -133,28 +133,6 @@ resource "aws_dynamodb_table" "ws_connections" {
   tags = merge(var.tags, { Name = "${var.project_name}-${var.environment}-ws-connections" })
 }
 
-resource "aws_dynamodb_table" "eval_results" {
-  name         = "${var.project_name}-${var.environment}-eval-results"
-  billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "job_id"
-  range_key    = "eval_run_id"
-
-  attribute {
-    name = "job_id"
-    type = "S"
-  }
-
-  attribute {
-    name = "eval_run_id"
-    type = "S"
-  }
-
-  point_in_time_recovery { enabled = true }
-  server_side_encryption { enabled = true }
-
-  tags = merge(var.tags, { Name = "${var.project_name}-${var.environment}-eval-results" })
-}
-
 resource "aws_dynamodb_table" "chat_history" {
   name         = "${var.project_name}-${var.environment}-chat-history"
   billing_mode = "PAY_PER_REQUEST"
@@ -209,7 +187,6 @@ resource "aws_iam_policy" "dynamodb_full" {
           "${aws_dynamodb_table.connections.arn}/index/*",
           aws_dynamodb_table.ws_connections.arn,
           "${aws_dynamodb_table.ws_connections.arn}/index/*",
-          aws_dynamodb_table.eval_results.arn,
           aws_dynamodb_table.chat_history.arn
         ]
       }

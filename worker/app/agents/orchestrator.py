@@ -22,7 +22,6 @@ from app.services.dynamodb import (
 from app.services.s3 import upload_scan_report
 from app.services.websocket import publish_progress
 from app.services.ses import send_scan_completed_email
-from app.services.eval import run_ragas_evaluation
 from app.services.dynamodb import get_user_credentials
 import logging
 
@@ -146,22 +145,6 @@ async def run_orchestrator(
     await asyncio.gather(
         store_scan_result(job_id, scan_record),
         upload_scan_report(scan_id, scan_record),
-    )
-
-    await publish_progress(job_id, "running", 95, "Running Ragas evaluation")
-    await update_job_status(job_id, "running", 95, "Running Ragas evaluation")
-
-    asyncio.create_task(
-        run_ragas_evaluation(
-            user_id, repo_id, scan_id,
-            {
-                "cve": cve_findings,
-                "bloat": bloat_findings,
-                "base_image": base_image_analysis,
-                "risk": risk_result,
-                "dockerfile": dockerfile_result,
-            }
-        )
     )
 
     await update_job_status(job_id, "completed", 100, "Scan complete")

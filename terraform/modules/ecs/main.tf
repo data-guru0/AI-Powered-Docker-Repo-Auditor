@@ -99,11 +99,6 @@ resource "aws_iam_role_policy" "task_ses_xray" {
       },
       {
         Effect   = "Allow"
-        Action   = ["xray:PutTraceSegments", "xray:PutTelemetryRecords", "xray:GetSamplingRules", "xray:GetSamplingTargets"]
-        Resource = "*"
-      },
-      {
-        Effect   = "Allow"
         Action   = ["cloudwatch:PutMetricData", "logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"]
         Resource = "*"
       },
@@ -429,18 +424,15 @@ resource "aws_ecs_task_definition" "backend" {
         { name = "DYNAMODB_SCAN_RESULTS_TABLE", value = var.scan_results_table },
         { name = "DYNAMODB_CONNECTIONS_TABLE", value = var.connections_table },
         { name = "DYNAMODB_WS_CONNECTIONS_TABLE", value = var.ws_connections_table },
-        { name = "DYNAMODB_EVAL_RESULTS_TABLE", value = var.eval_results_table },
         { name = "DYNAMODB_CHAT_HISTORY_TABLE", value = var.chat_history_table },
         { name = "SQS_SCAN_JOBS_URL", value = var.scan_jobs_queue_url },
         { name = "S3_SCAN_REPORTS_BUCKET", value = var.scan_reports_bucket },
-        { name = "S3_EVAL_REPORTS_BUCKET", value = var.eval_reports_bucket },
         { name = "REDIS_URL", value = var.redis_url },
         { name = "SES_FROM_EMAIL", value = var.ses_from_email },
         { name = "SECRET_PREFIX", value = var.secret_prefix },
         { name = "WEBSOCKET_API_ENDPOINT", value = var.websocket_execution_arn },
         { name = "LANGCHAIN_TRACING_V2", value = "true" },
-        { name = "LANGCHAIN_PROJECT", value = "${var.project_name}-${var.environment}" },
-        { name = "AWS_XRAY_DAEMON_ADDRESS", value = "localhost:2000" }
+        { name = "LANGCHAIN_PROJECT", value = "${var.project_name}-${var.environment}" }
       ]
 
       secrets = [
@@ -463,26 +455,6 @@ resource "aws_ecs_task_definition" "backend" {
         timeout     = 5
         retries     = 3
         startPeriod = 60
-      }
-    },
-    {
-      name      = "xray-daemon"
-      image     = "amazon/aws-xray-daemon"
-      essential = false
-
-      portMappings = [
-        { containerPort = 2000, protocol = "udp" }
-      ]
-
-      command = ["--local-mode"]
-
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          "awslogs-group"         = var.backend_log_group
-          "awslogs-region"        = var.aws_region
-          "awslogs-stream-prefix" = "xray"
-        }
       }
     }
   ])
@@ -512,11 +484,9 @@ resource "aws_ecs_task_definition" "worker" {
         { name = "DYNAMODB_SCAN_JOBS_TABLE", value = var.scan_jobs_table },
         { name = "DYNAMODB_SCAN_RESULTS_TABLE", value = var.scan_results_table },
         { name = "DYNAMODB_WS_CONNECTIONS_TABLE", value = var.ws_connections_table },
-        { name = "DYNAMODB_EVAL_RESULTS_TABLE", value = var.eval_results_table },
         { name = "DYNAMODB_CHAT_HISTORY_TABLE", value = var.chat_history_table },
         { name = "SQS_SCAN_JOBS_URL", value = var.scan_jobs_queue_url },
         { name = "S3_SCAN_REPORTS_BUCKET", value = var.scan_reports_bucket },
-        { name = "S3_EVAL_REPORTS_BUCKET", value = var.eval_reports_bucket },
         { name = "REDIS_URL", value = var.redis_url },
         { name = "TRIVY_LAMBDA_FUNCTION_NAME", value = var.trivy_lambda_name },
         { name = "WEBSOCKET_API_ENDPOINT", value = var.websocket_execution_arn },
@@ -525,8 +495,7 @@ resource "aws_ecs_task_definition" "worker" {
         { name = "OPENAI_API_KEY_SECRET_NAME", value = var.openai_secret_name },
         { name = "LANGSMITH_API_KEY_SECRET_NAME", value = var.langsmith_secret_name },
         { name = "LANGCHAIN_TRACING_V2", value = "true" },
-        { name = "LANGCHAIN_PROJECT", value = "${var.project_name}-${var.environment}" },
-        { name = "AWS_XRAY_DAEMON_ADDRESS", value = "localhost:2000" }
+        { name = "LANGCHAIN_PROJECT", value = "${var.project_name}-${var.environment}" }
       ]
 
       logConfiguration = {
@@ -535,26 +504,6 @@ resource "aws_ecs_task_definition" "worker" {
           "awslogs-group"         = var.worker_log_group
           "awslogs-region"        = var.aws_region
           "awslogs-stream-prefix" = "worker"
-        }
-      }
-    },
-    {
-      name      = "xray-daemon"
-      image     = "amazon/aws-xray-daemon"
-      essential = false
-
-      portMappings = [
-        { containerPort = 2000, protocol = "udp" }
-      ]
-
-      command = ["--local-mode"]
-
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          "awslogs-group"         = var.worker_log_group
-          "awslogs-region"        = var.aws_region
-          "awslogs-stream-prefix" = "xray"
         }
       }
     }

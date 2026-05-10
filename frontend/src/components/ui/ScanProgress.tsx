@@ -19,7 +19,6 @@ const STEPS = [
   "Dockerfile Optimizer Agent",
   "Risk Scorer Agent",
   "Storing results",
-  "Running Ragas evaluation",
   "Sending completion email",
 ];
 

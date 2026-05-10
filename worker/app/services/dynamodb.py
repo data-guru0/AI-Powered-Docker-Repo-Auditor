@@ -1,5 +1,4 @@
 import json
-import uuid
 from datetime import datetime, timezone
 from typing import Optional, Any
 from app.core.aws import get_dynamodb_resource, get_secrets_client
@@ -15,7 +14,6 @@ def _table(name: str):
     table_map = {
         "scan_jobs": settings.DYNAMODB_SCAN_JOBS_TABLE,
         "scan_results": settings.DYNAMODB_SCAN_RESULTS_TABLE,
-        "eval_results": settings.DYNAMODB_EVAL_RESULTS_TABLE,
     }
     return resource.Table(table_map[name])
 
@@ -69,19 +67,6 @@ async def get_previous_scan(user_id: str, repo_id: str) -> Optional[dict]:
     )
     items = resp.get("Items", [])
     return items[0] if items else None
-
-
-async def store_eval_scores(job_id: str, repo_id: str, scores: dict) -> None:
-    table = _table("eval_results")
-    for agent_name, agent_scores in scores.items():
-        table.put_item(Item=_serialize({
-            "job_id": repo_id,
-            "eval_run_id": str(uuid.uuid4()),
-            "agent_name": agent_name,
-            "scan_id": job_id,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            **agent_scores,
-        }))
 
 
 async def get_user_credentials(user_id: str) -> dict:

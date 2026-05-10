@@ -9,7 +9,7 @@ import type {
   LayerInfo,
 } from "@/types/registry";
 import type { ScanJob, ScanResult, ScoreHistory } from "@/types/scan";
-import type { ChatRequest, ChatMessage, EvalSummary } from "@/types/agent";
+import type { ChatRequest, ChatMessage } from "@/types/agent";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -105,9 +105,4 @@ export const chatApi = {
       method: "POST",
       body: JSON.stringify(payload),
     }),
-};
-
-export const evalApi = {
-  getSummary: (repoId: string): Promise<EvalSummary> =>
-    request(`/api/v1/evals/${repoId}`),
 };

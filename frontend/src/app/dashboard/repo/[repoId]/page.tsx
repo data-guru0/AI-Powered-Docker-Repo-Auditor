@@ -18,7 +18,6 @@ import { UnusedImagesCard } from "@/components/dashboard/cards/UnusedImagesCard"
 import { AIRecommendationsCard } from "@/components/dashboard/cards/AIRecommendationsCard";
 import { ComplianceStatusCard } from "@/components/dashboard/cards/ComplianceStatusCard";
 import { CostIntelligenceCard } from "@/components/dashboard/cards/CostIntelligenceCard";
-import { LLMEvalPanel } from "@/components/eval/LLMEvalPanel";
 import { ScanProgress } from "@/components/ui/ScanProgress";
 import { ChatAgent } from "@/components/ui/ChatAgent";
 import type { ScanResult } from "@/types/scan";
@@ -243,8 +242,6 @@ export default function RepoDashboardPage() {
             <FindingsTable findings={scanResult.findings} />
           </div>
 
-          {/* Row 7: LLM Eval */}
-          <LLMEvalPanel repoId={repoId} />
         </>
       ) : (
         <div className="flex flex-col items-center justify-center h-64 gap-4">

@@ -26,7 +26,6 @@ def _table(name: str):
         "ws_connections": settings.DYNAMODB_WS_CONNECTIONS_TABLE,
         "scan_jobs": settings.DYNAMODB_SCAN_JOBS_TABLE,
         "scan_results": settings.DYNAMODB_SCAN_RESULTS_TABLE,
-        "eval_results": settings.DYNAMODB_EVAL_RESULTS_TABLE,
     }
     return resource.Table(table_map[name])
 
@@ -138,15 +137,3 @@ async def get_scan_history(user_id: str, repo_id: str) -> list[dict]:
         Limit=30,
     )
     return [_deserialize(item) for item in resp.get("Items", [])]
-
-
-# ── Eval scores ──────────────────────────────────────────────────────────────
-
-async def get_eval_scores(user_id: str, repo_id: str) -> list[dict]:
-    table = _table("eval_results")
-    resp = table.query(
-        KeyConditionExpression=Key("job_id").eq(repo_id),
-        ScanIndexForward=False,
-        Limit=50,
-    )
-    return resp.get("Items", [])

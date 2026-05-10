@@ -61,44 +61,6 @@ resource "aws_s3_bucket_lifecycle_configuration" "scan_reports" {
   }
 }
 
-resource "aws_s3_bucket" "eval_reports" {
-  bucket        = "${var.project_name}-${var.environment}-eval-reports-${var.aws_account_id}"
-  force_destroy = var.environment != "prod"
-  tags          = merge(var.tags, { Name = "${var.project_name}-${var.environment}-eval-reports" })
-}
-
-resource "aws_s3_bucket_server_side_encryption_configuration" "eval_reports" {
-  bucket = aws_s3_bucket.eval_reports.id
-  rule {
-    apply_server_side_encryption_by_default {
-      sse_algorithm = "aws:kms"
-    }
-    bucket_key_enabled = true
-  }
-}
-
-resource "aws_s3_bucket_public_access_block" "eval_reports" {
-  bucket                  = aws_s3_bucket.eval_reports.id
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
-}
-
-resource "aws_s3_bucket_lifecycle_configuration" "eval_reports" {
-  bucket = aws_s3_bucket.eval_reports.id
-
-  rule {
-    id     = "expire-eval-reports"
-    status = "Enabled"
-    filter {}
-
-    expiration {
-      days = 90
-    }
-  }
-}
-
 resource "aws_iam_policy" "s3_full" {
   name        = "${var.project_name}-${var.environment}-s3-full"
   description = "Full access to application S3 buckets"
@@ -116,9 +78,7 @@ resource "aws_iam_policy" "s3_full" {
         ]
         Resource = [
           aws_s3_bucket.scan_reports.arn,
-          "${aws_s3_bucket.scan_reports.arn}/*",
-          aws_s3_bucket.eval_reports.arn,
-          "${aws_s3_bucket.eval_reports.arn}/*"
+          "${aws_s3_bucket.scan_reports.arn}/*"
         ]
       }
     ]

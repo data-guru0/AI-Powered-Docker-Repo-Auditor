@@ -4,7 +4,6 @@ import signal
 import logging
 from app.core.aws import get_sqs_client, get_langsmith_api_key, get_openai_api_key
 from app.core.config import settings
-from app.core.telemetry import setup_xray
 from app.agents.orchestrator import run_orchestrator
 from app.services.dynamodb import update_job_status, init_job_record
 from app.services.websocket import publish_progress
@@ -74,7 +73,6 @@ async def poll_sqs() -> None:
 
 
 async def main() -> None:
-    setup_xray()
     os.environ["OPENAI_API_KEY"] = get_openai_api_key()
     os.environ["LANGCHAIN_API_KEY"] = get_langsmith_api_key()
     os.environ["LANGCHAIN_TRACING_V2"] = settings.LANGCHAIN_TRACING_V2
