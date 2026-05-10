@@ -15,6 +15,7 @@ class WorkerSettings(BaseSettings):
     REDIS_URL: str
     OPENAI_API_KEY_SECRET_NAME: str
     LANGSMITH_API_KEY_SECRET_NAME: str
+    SECRET_PREFIX: str = "docker-auditor/dev"
     LANGCHAIN_PROJECT: str = "docker-image-auditor"
     LANGCHAIN_TRACING_V2: str = "true"
     TRIVY_LAMBDA_FUNCTION_NAME: str

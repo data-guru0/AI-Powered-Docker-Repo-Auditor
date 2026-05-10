@@ -114,7 +114,7 @@ async def run_orchestrator(
     }
 
     await asyncio.gather(
-        store_scan_result(user_id, scan_record),
+        store_scan_result(job_id, scan_record),
         upload_scan_report(scan_id, scan_record),
     )
 

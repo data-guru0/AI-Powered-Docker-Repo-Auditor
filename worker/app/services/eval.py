@@ -65,7 +65,7 @@ async def run_ragas_evaluation(
 
         if eval_scores:
             await asyncio.gather(
-                store_eval_scores(user_id, repo_id, scan_id, eval_scores),
+                store_eval_scores(scan_id, repo_id, eval_scores),
                 upload_eval_log(scan_id, {"scan_id": scan_id, "scores": eval_scores}),
             )
             logger.info("Ragas evaluation complete for scan %s", scan_id)
