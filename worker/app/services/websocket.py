@@ -2,6 +2,7 @@ import json
 import boto3
 from app.core.config import settings
 from app.core.aws import get_dynamodb_resource
+from boto3.dynamodb.conditions import Key
 import logging
 
 logger = logging.getLogger(__name__)
@@ -14,7 +15,7 @@ async def publish_progress(
     step: str,
     message: str = "",
 ) -> None:
-    if not settings.API_GATEWAY_WS_ENDPOINT:
+    if not settings.WEBSOCKET_API_ENDPOINT:
         logger.debug("No WebSocket endpoint configured, skipping publish for job %s", job_id)
         return
 
@@ -34,7 +35,7 @@ async def publish_progress(
 
     client = boto3.client(
         "apigatewaymanagementapi",
-        endpoint_url=settings.API_GATEWAY_WS_ENDPOINT,
+        endpoint_url=settings.WEBSOCKET_API_ENDPOINT,
         region_name=settings.AWS_REGION,
     )
 
@@ -61,10 +62,9 @@ async def publish_progress(
 async def _get_connection_ids(job_id: str) -> list[str]:
     try:
         resource = get_dynamodb_resource()
-        table = resource.Table(f"{settings.DYNAMODB_TABLE_PREFIX}-ws_connections")
+        table = resource.Table(settings.DYNAMODB_WS_CONNECTIONS_TABLE)
         resp = table.query(
-            KeyConditionExpression="job_id = :jid",
-            ExpressionAttributeValues={":jid": job_id},
+            KeyConditionExpression=Key("job_id").eq(job_id)
         )
         return [item["connection_id"] for item in resp.get("Items", [])]
     except Exception as exc:
@@ -75,7 +75,7 @@ async def _get_connection_ids(job_id: str) -> list[str]:
 async def _remove_stale_connections(job_id: str, connection_ids: list[str]) -> None:
     try:
         resource = get_dynamodb_resource()
-        table = resource.Table(f"{settings.DYNAMODB_TABLE_PREFIX}-ws_connections")
+        table = resource.Table(settings.DYNAMODB_WS_CONNECTIONS_TABLE)
         for connection_id in connection_ids:
             table.delete_item(
                 Key={"job_id": job_id, "connection_id": connection_id}

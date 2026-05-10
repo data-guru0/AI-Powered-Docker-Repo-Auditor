@@ -168,7 +168,7 @@ module "ecs" {
   langsmith_secret_arn     = module.secrets.langsmith_api_key_secret_arn
   langsmith_secret_name    = module.secrets.langsmith_api_key_secret_name
   trivy_lambda_name        = module.lambda.trivy_scanner_name
-  websocket_execution_arn  = module.api.websocket_stage_url
+  websocket_execution_arn  = module.api.websocket_management_url
   websocket_url            = module.api.websocket_stage_url
   frontend_log_group       = module.monitoring.frontend_log_group
   backend_log_group        = module.monitoring.backend_log_group
@@ -189,10 +189,24 @@ module "ecs" {
   tags                     = local.common_tags
 }
 
-resource "aws_apigatewayv2_integration" "backend" {
+resource "aws_apigatewayv2_integration" "ws_connect" {
   api_id             = module.api.websocket_api_id
   integration_type   = "HTTP_PROXY"
-  integration_uri    = "http://${module.ecs.backend_alb_dns}/ws"
+  integration_uri    = "http://${module.ecs.backend_alb_dns}/api/v1/ws/connect"
+  integration_method = "POST"
+}
+
+resource "aws_apigatewayv2_integration" "ws_disconnect" {
+  api_id             = module.api.websocket_api_id
+  integration_type   = "HTTP_PROXY"
+  integration_uri    = "http://${module.ecs.backend_alb_dns}/api/v1/ws/disconnect"
+  integration_method = "POST"
+}
+
+resource "aws_apigatewayv2_integration" "ws_message" {
+  api_id             = module.api.websocket_api_id
+  integration_type   = "HTTP_PROXY"
+  integration_uri    = "http://${module.ecs.backend_alb_dns}/api/v1/ws/message"
   integration_method = "POST"
 }
 
@@ -201,23 +215,23 @@ resource "aws_apigatewayv2_route" "connect" {
   route_key          = "$connect"
   authorization_type = "CUSTOM"
   authorizer_id      = module.api.websocket_authorizer_id
-  target             = "integrations/${aws_apigatewayv2_integration.backend.id}"
+  target             = "integrations/${aws_apigatewayv2_integration.ws_connect.id}"
 }
 
 resource "aws_apigatewayv2_route" "disconnect" {
   api_id    = module.api.websocket_api_id
   route_key = "$disconnect"
-  target    = "integrations/${aws_apigatewayv2_integration.backend.id}"
+  target    = "integrations/${aws_apigatewayv2_integration.ws_disconnect.id}"
 }
 
 resource "aws_apigatewayv2_route" "subscribe" {
   api_id    = module.api.websocket_api_id
   route_key = "subscribe"
-  target    = "integrations/${aws_apigatewayv2_integration.backend.id}"
+  target    = "integrations/${aws_apigatewayv2_integration.ws_message.id}"
 }
 
 resource "aws_apigatewayv2_route" "default" {
   api_id    = module.api.websocket_api_id
   route_key = "$default"
-  target    = "integrations/${aws_apigatewayv2_integration.backend.id}"
+  target    = "integrations/${aws_apigatewayv2_integration.ws_message.id}"
 }

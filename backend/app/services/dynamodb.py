@@ -12,11 +12,32 @@ def _table(name: str):
     resource = get_dynamodb_resource()
     table_map = {
         "connections": settings.DYNAMODB_CONNECTIONS_TABLE,
+        "ws_connections": settings.DYNAMODB_WS_CONNECTIONS_TABLE,
         "scan_jobs": settings.DYNAMODB_SCAN_JOBS_TABLE,
         "scan_results": settings.DYNAMODB_SCAN_RESULTS_TABLE,
         "eval_results": settings.DYNAMODB_EVAL_RESULTS_TABLE,
     }
     return resource.Table(table_map[name])
+
+
+# ── WebSocket connections ────────────────────────────────────────────────────
+
+async def save_ws_connection(job_id: str, connection_id: str) -> None:
+    table = _table("ws_connections")
+    table.put_item(Item={"job_id": job_id, "connection_id": connection_id})
+
+
+async def delete_ws_connection(connection_id: str) -> None:
+    table = _table("ws_connections")
+    resp = table.scan(FilterExpression=Attr("connection_id").eq(connection_id))
+    for item in resp.get("Items", []):
+        table.delete_item(Key={"job_id": item["job_id"], "connection_id": connection_id})
+
+
+async def get_ws_connection_ids(job_id: str) -> list[str]:
+    table = _table("ws_connections")
+    resp = table.query(KeyConditionExpression=Key("job_id").eq(job_id))
+    return [item["connection_id"] for item in resp.get("Items", [])]
 
 
 # ── Workspace repos (stored in connections table with repo# prefix) ──────────

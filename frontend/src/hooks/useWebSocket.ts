@@ -16,15 +16,12 @@ export function useWebSocket(jobId: string | null) {
   const connect = useCallback(async () => {
     if (!jobId || !WS_URL) return;
     const token = await getIdToken();
-    const url = `${WS_URL}?token=${token}`;
+    const url = `${WS_URL}?token=${token}&jobId=${jobId}`;
 
     ws.current = new WebSocket(url);
 
     ws.current.onopen = () => {
       setConnected(true);
-      ws.current?.send(
-        JSON.stringify({ action: "subscribe", jobId })
-      );
     };
 
     ws.current.onmessage = (e) => {
