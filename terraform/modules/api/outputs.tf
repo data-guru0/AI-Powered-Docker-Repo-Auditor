@@ -5,3 +5,5 @@ output "websocket_management_url" { value = "https://${trimprefix(aws_apigateway
 output "websocket_execution_arn" { value = aws_apigatewayv2_api.websocket.execution_arn }
 output "websocket_authorizer_id" { value = aws_apigatewayv2_authorizer.cognito.id }
 output "apigw_post_policy_arn" { value = aws_iam_policy.apigw_post_to_connection.arn }
+output "ws_connect_invoke_arn" { value = aws_lambda_function.ws_connect.invoke_arn }
+output "ws_disconnect_invoke_arn" { value = aws_lambda_function.ws_disconnect.invoke_arn }

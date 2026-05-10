@@ -189,26 +189,18 @@ module "ecs" {
   tags                     = local.common_tags
 }
 
-# Keep original resource name so Terraform updates in-place instead of delete+recreate
+# Lambda integration for $connect — receives connectionId natively via event.requestContext
 resource "aws_apigatewayv2_integration" "backend" {
-  api_id             = module.api.websocket_api_id
-  integration_type   = "HTTP_PROXY"
-  integration_uri    = "http://${module.ecs.backend_alb_dns}/api/v1/ws/connect"
-  integration_method = "POST"
-  request_parameters = {
-    "integration.request.header.x-connection-id" = "$context.connectionId"
-    "integration.request.querystring.jobId"      = "$request.querystring.jobId"
-  }
+  api_id           = module.api.websocket_api_id
+  integration_type = "AWS_PROXY"
+  integration_uri  = module.api.ws_connect_invoke_arn
 }
 
+# Lambda integration for $disconnect
 resource "aws_apigatewayv2_integration" "ws_disconnect" {
-  api_id             = module.api.websocket_api_id
-  integration_type   = "HTTP_PROXY"
-  integration_uri    = "http://${module.ecs.backend_alb_dns}/api/v1/ws/disconnect"
-  integration_method = "POST"
-  request_parameters = {
-    "integration.request.header.x-connection-id" = "$context.connectionId"
-  }
+  api_id           = module.api.websocket_api_id
+  integration_type = "AWS_PROXY"
+  integration_uri  = module.api.ws_disconnect_invoke_arn
 }
 
 resource "aws_apigatewayv2_integration" "ws_message" {
@@ -216,9 +208,6 @@ resource "aws_apigatewayv2_integration" "ws_message" {
   integration_type   = "HTTP_PROXY"
   integration_uri    = "http://${module.ecs.backend_alb_dns}/api/v1/ws/message"
   integration_method = "POST"
-  request_parameters = {
-    "integration.request.header.x-connection-id" = "$context.connectionId"
-  }
 }
 
 resource "aws_apigatewayv2_route" "connect" {
