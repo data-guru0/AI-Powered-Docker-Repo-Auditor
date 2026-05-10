@@ -41,6 +41,11 @@ export async function getAuthenticatedUser(): Promise<AuthUser | null> {
 }
 
 export async function loginUser(email: string, password: string) {
+  try {
+    await signOut();
+  } catch {
+    // no active session, ignore
+  }
   return signIn({ username: email, password });
 }
 
