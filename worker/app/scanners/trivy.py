@@ -72,6 +72,7 @@ async def _run_trivy_local(target: str, user_creds: dict) -> dict:
         "--quiet",
         "--no-progress",
         "--skip-db-update",
+        "--scanners", "vuln,secret",
         "--timeout", "10m",
         target,
     ]
