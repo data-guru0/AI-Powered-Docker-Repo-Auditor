@@ -23,13 +23,11 @@ def _table(name: str):
 
 async def get_workspace_repos(user_id: str) -> list[dict]:
     table = _table("connections")
-    resp = table.query(
-        KeyConditionExpression=Key("user_id").eq(user_id),
-        FilterExpression=Attr("connection_id").begins_with("repo#"),
-    )
+    resp = table.query(KeyConditionExpression=Key("user_id").eq(user_id))
     return [
         {k: v for k, v in item.items() if k not in ("user_id", "connection_id")}
         for item in resp.get("Items", [])
+        if item.get("connection_id", "").startswith("repo#")
     ]
 
 
@@ -54,13 +52,11 @@ async def remove_workspace_repo(user_id: str, repo_id: str) -> None:
 
 async def get_connection_status(user_id: str) -> list[dict]:
     table = _table("connections")
-    resp = table.query(
-        KeyConditionExpression=Key("user_id").eq(user_id),
-        FilterExpression=Attr("connection_id").is_in(["ecr", "dockerhub"]),
-    )
+    resp = table.query(KeyConditionExpression=Key("user_id").eq(user_id))
     return [
         {k: v for k, v in item.items() if k not in ("user_id", "connection_id")}
         for item in resp.get("Items", [])
+        if item.get("connection_id") in ("ecr", "dockerhub")
     ]
 
 
