@@ -6,12 +6,13 @@ interface RingScoreProps {
   label: string;
   score: number;
   color: string;
+  reason?: string;
 }
 
 const RADIUS = 45;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
-export function RingScore({ label, score, color }: RingScoreProps) {
+export function RingScore({ label, score, color, reason }: RingScoreProps) {
   const [animatedOffset, setAnimatedOffset] = useState(CIRCUMFERENCE);
 
   useEffect(() => {
@@ -32,12 +33,12 @@ export function RingScore({ label, score, color }: RingScoreProps) {
       : "#ef4444";
 
   return (
-    <div className="flex flex-col items-center gap-2">
+    <div className="flex flex-col items-center gap-1.5 min-w-0">
       <svg
         width={112}
         height={112}
         viewBox="0 0 112 112"
-        className="overflow-visible"
+        className="overflow-visible shrink-0"
       >
         <circle
           cx={56}
@@ -59,11 +60,7 @@ export function RingScore({ label, score, color }: RingScoreProps) {
           strokeDashoffset={animatedOffset}
           transform="rotate(-90 56 56)"
           className="ring-score-circle"
-          style={
-            {
-              filter: `drop-shadow(0 0 6px ${scoreColor}60)`,
-            } as React.CSSProperties
-          }
+          style={{ filter: `drop-shadow(0 0 6px ${scoreColor}60)` } as React.CSSProperties}
         />
         <text
           x={56}
@@ -88,9 +85,14 @@ export function RingScore({ label, score, color }: RingScoreProps) {
           / 100
         </text>
       </svg>
-      <span className="text-xs font-medium text-text-secondary tracking-wide">
+      <span className="text-xs font-semibold text-text-secondary tracking-wide text-center">
         {label}
       </span>
+      {reason && (
+        <span className="text-[10px] text-text-muted text-center leading-tight max-w-[110px]">
+          {reason}
+        </span>
+      )}
     </div>
   );
 }
