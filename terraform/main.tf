@@ -197,7 +197,7 @@ resource "aws_apigatewayv2_integration" "backend" {
   integration_method = "POST"
   request_parameters = {
     "integration.request.header.x-connection-id" = "$context.connectionId"
-    "integration.request.querystring.jobId"       = "$request.querystring.jobId"
+    "integration.request.querystring.jobId"      = "$request.querystring.jobId"
   }
 }
 
