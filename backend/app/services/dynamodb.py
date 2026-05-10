@@ -1,4 +1,5 @@
-from typing import Optional
+from typing import Optional, Any
+from decimal import Decimal
 from datetime import datetime, timezone
 from app.core.aws import get_dynamodb_resource
 from app.core.config import settings
@@ -6,6 +7,16 @@ from boto3.dynamodb.conditions import Key, Attr
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+def _deserialize(obj: Any) -> Any:
+    if isinstance(obj, dict):
+        return {k: _deserialize(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_deserialize(v) for v in obj]
+    if isinstance(obj, Decimal):
+        return float(obj)
+    return obj
 
 
 def _table(name: str):
@@ -99,8 +110,8 @@ async def save_connection_status(user_id: str, connections: list[dict]) -> None:
 # ── Scans ────────────────────────────────────────────────────────────────────
 
 async def get_latest_scan(user_id: str, repo_id: str) -> Optional[dict]:
-    table = _table("scan_jobs")
-    resp = table.query(
+    jobs_table = _table("scan_jobs")
+    resp = jobs_table.query(
         IndexName="RepoIdIndex",
         KeyConditionExpression=Key("repo_id").eq(repo_id),
         FilterExpression=Attr("user_id").eq(user_id),
@@ -108,25 +119,38 @@ async def get_latest_scan(user_id: str, repo_id: str) -> Optional[dict]:
         Limit=1,
     )
     items = resp.get("Items", [])
-    return items[0] if items else None
+    if not items:
+        return None
+    job_id = items[0]["job_id"]
+    result = _table("scan_results").get_item(Key={"job_id": job_id})
+    item = result.get("Item")
+    return _deserialize(item) if item else None
 
 
 async def get_scan_result(scan_id: str) -> Optional[dict]:
-    table = _table("scan_jobs")
-    resp = table.get_item(Key={"job_id": scan_id})
-    return resp.get("Item")
+    resp = _table("scan_results").get_item(Key={"job_id": scan_id})
+    item = resp.get("Item")
+    return _deserialize(item) if item else None
 
 
 async def get_scan_history(user_id: str, repo_id: str) -> list[dict]:
-    table = _table("scan_jobs")
-    resp = table.query(
+    jobs_table = _table("scan_jobs")
+    resp = jobs_table.query(
         IndexName="RepoIdIndex",
         KeyConditionExpression=Key("repo_id").eq(repo_id),
         FilterExpression=Attr("user_id").eq(user_id),
         ScanIndexForward=False,
         Limit=30,
     )
-    return resp.get("Items", [])
+    jobs = resp.get("Items", [])
+    results_table = _table("scan_results")
+    history = []
+    for job in jobs:
+        r = results_table.get_item(Key={"job_id": job["job_id"]})
+        item = r.get("Item")
+        if item:
+            history.append(_deserialize(item))
+    return history
 
 
 # ── Eval scores ──────────────────────────────────────────────────────────────
