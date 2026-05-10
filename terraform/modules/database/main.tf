@@ -58,6 +58,23 @@ resource "aws_dynamodb_table" "scan_results" {
     type = "S"
   }
 
+  attribute {
+    name = "repoId"
+    type = "S"
+  }
+
+  attribute {
+    name = "scanDate"
+    type = "S"
+  }
+
+  global_secondary_index {
+    name            = "RepoIdIndex"
+    hash_key        = "repoId"
+    range_key       = "scanDate"
+    projection_type = "ALL"
+  }
+
   point_in_time_recovery { enabled = true }
   server_side_encryption { enabled = true }
 
@@ -187,6 +204,7 @@ resource "aws_iam_policy" "dynamodb_full" {
           aws_dynamodb_table.scan_jobs.arn,
           "${aws_dynamodb_table.scan_jobs.arn}/index/*",
           aws_dynamodb_table.scan_results.arn,
+          "${aws_dynamodb_table.scan_results.arn}/index/*",
           aws_dynamodb_table.connections.arn,
           "${aws_dynamodb_table.connections.arn}/index/*",
           aws_dynamodb_table.ws_connections.arn,

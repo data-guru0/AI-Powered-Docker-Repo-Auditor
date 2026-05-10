@@ -110,10 +110,9 @@ async def save_connection_status(user_id: str, connections: list[dict]) -> None:
 # ── Scans ────────────────────────────────────────────────────────────────────
 
 async def get_latest_scan(user_id: str, repo_id: str) -> Optional[dict]:
-    jobs_table = _table("scan_jobs")
-    resp = jobs_table.query(
+    resp = _table("scan_results").query(
         IndexName="RepoIdIndex",
-        KeyConditionExpression=Key("repo_id").eq(repo_id),
+        KeyConditionExpression=Key("repoId").eq(repo_id),
         FilterExpression=Attr("user_id").eq(user_id),
         ScanIndexForward=False,
         Limit=1,
@@ -121,10 +120,7 @@ async def get_latest_scan(user_id: str, repo_id: str) -> Optional[dict]:
     items = resp.get("Items", [])
     if not items:
         return None
-    job_id = items[0]["job_id"]
-    result = _table("scan_results").get_item(Key={"job_id": job_id})
-    item = result.get("Item")
-    return _deserialize(item) if item else None
+    return _deserialize(items[0])
 
 
 async def get_scan_result(scan_id: str) -> Optional[dict]:
@@ -134,23 +130,14 @@ async def get_scan_result(scan_id: str) -> Optional[dict]:
 
 
 async def get_scan_history(user_id: str, repo_id: str) -> list[dict]:
-    jobs_table = _table("scan_jobs")
-    resp = jobs_table.query(
+    resp = _table("scan_results").query(
         IndexName="RepoIdIndex",
-        KeyConditionExpression=Key("repo_id").eq(repo_id),
+        KeyConditionExpression=Key("repoId").eq(repo_id),
         FilterExpression=Attr("user_id").eq(user_id),
         ScanIndexForward=False,
         Limit=30,
     )
-    jobs = resp.get("Items", [])
-    results_table = _table("scan_results")
-    history = []
-    for job in jobs:
-        r = results_table.get_item(Key={"job_id": job["job_id"]})
-        item = r.get("Item")
-        if item:
-            history.append(_deserialize(item))
-    return history
+    return [_deserialize(item) for item in resp.get("Items", [])]
 
 
 # ── Eval scores ──────────────────────────────────────────────────────────────
