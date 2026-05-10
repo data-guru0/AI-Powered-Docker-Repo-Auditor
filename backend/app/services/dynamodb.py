@@ -3,6 +3,7 @@ from typing import Optional, Any
 from datetime import datetime, timezone
 from app.core.aws import get_dynamodb_resource
 from app.core.config import settings
+from boto3.dynamodb.conditions import Key
 import logging
 
 logger = logging.getLogger(__name__)
@@ -88,15 +89,15 @@ async def get_eval_scores(user_id: str, repo_id: str) -> list[dict]:
 
 async def get_connection_status(user_id: str) -> list[dict]:
     table = _table("users")
-    resp = table.get_item(Key={"user_id": user_id})
-    item = resp.get("Item", {})
-    return item.get("connections", [])
+    resp = table.query(KeyConditionExpression=Key("user_id").eq(user_id))
+    items = resp.get("Items", [])
+    return [{k: v for k, v in item.items() if k not in ("user_id", "connection_id")} for item in items]
 
 
 async def save_connection_status(user_id: str, connections: list[dict]) -> None:
     table = _table("users")
-    table.update_item(
-        Key={"user_id": user_id},
-        UpdateExpression="SET connections = :c",
-        ExpressionAttributeValues={":c": connections},
-    )
+    existing = table.query(KeyConditionExpression=Key("user_id").eq(user_id)).get("Items", [])
+    for item in existing:
+        table.delete_item(Key={"user_id": user_id, "connection_id": item["connection_id"]})
+    for conn in connections:
+        table.put_item(Item={"user_id": user_id, "connection_id": conn.get("type", "unknown"), **conn})
