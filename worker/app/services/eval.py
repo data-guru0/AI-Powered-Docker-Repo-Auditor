@@ -8,6 +8,41 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def _safe(v: float) -> float:
+    return 0.0 if (math.isnan(v) or math.isinf(v)) else v
+
+
+def _run_ragas_for_agent(agent_name: str, questions: list[dict]) -> dict:
+    """Synchronous ragas evaluation — runs in a thread pool to avoid blocking the event loop."""
+    from ragas.metrics import (
+        faithfulness,
+        answer_relevancy,
+        context_precision,
+        context_recall,
+        answer_correctness,
+    )
+    from ragas import evaluate
+    from datasets import Dataset
+
+    dataset = Dataset.from_list(questions)
+    result = evaluate(
+        dataset,
+        metrics=[faithfulness, answer_relevancy, context_precision, context_recall, answer_correctness],
+    )
+    scores_df = result.to_pandas()
+    avg = scores_df.mean(numeric_only=True).to_dict()
+
+    fs = _safe(float(avg.get("faithfulness", 0.0)))
+    return {
+        "faithfulness": fs,
+        "answer_relevancy": _safe(float(avg.get("answer_relevancy", 0.0))),
+        "hallucination_score": _safe(1.0 - fs),
+        "context_precision": _safe(float(avg.get("context_precision", 0.0))),
+        "context_recall": _safe(float(avg.get("context_recall", 0.0))),
+        "answer_correctness": _safe(float(avg.get("answer_correctness", 0.0))),
+    }
+
+
 async def run_ragas_evaluation(
     user_id: str,
     repo_id: str,
@@ -15,20 +50,13 @@ async def run_ragas_evaluation(
     agent_outputs: dict[str, Any],
 ) -> None:
     try:
-        from ragas.metrics import (
-            faithfulness,
-            answer_relevancy,
-            context_precision,
-            context_recall,
-            answer_correctness,
-        )
-        from ragas import evaluate
-        from datasets import Dataset
+        import importlib
+        if importlib.util.find_spec("ragas") is None:
+            logger.warning("Ragas package not installed, skipping evaluation")
+            return
 
         eval_scores: dict[str, dict] = {}
-
-        def _safe(v: float) -> float:
-            return 0.0 if (math.isnan(v) or math.isinf(v)) else v
+        loop = asyncio.get_event_loop()
 
         for agent_name, agent_output in agent_outputs.items():
             if not agent_output:
@@ -38,35 +66,18 @@ async def run_ragas_evaluation(
             if not questions:
                 continue
 
-            dataset = Dataset.from_list(questions)
-
             try:
-                result = evaluate(
-                    dataset,
-                    metrics=[
-                        faithfulness,
-                        answer_relevancy,
-                        context_precision,
-                        context_recall,
-                        answer_correctness,
-                    ],
+                scores = await asyncio.wait_for(
+                    loop.run_in_executor(None, _run_ragas_for_agent, agent_name, questions),
+                    timeout=90,
                 )
-
-                scores_df = result.to_pandas()
-                avg_scores = scores_df.mean(numeric_only=True).to_dict()
-
-                faithfulness_score = _safe(float(avg_scores.get("faithfulness", 0.0)))
-                eval_scores[agent_name] = {
-                    "faithfulness": faithfulness_score,
-                    "answer_relevancy": _safe(float(avg_scores.get("answer_relevancy", 0.0))),
-                    "hallucination_score": _safe(1.0 - faithfulness_score),
-                    "context_precision": _safe(float(avg_scores.get("context_precision", 0.0))),
-                    "context_recall": _safe(float(avg_scores.get("context_recall", 0.0))),
-                    "answer_correctness": _safe(float(avg_scores.get("answer_correctness", 0.0))),
-                }
-                logger.info("Ragas eval done for agent %s: faithfulness=%.2f", agent_name, faithfulness_score)
+                eval_scores[agent_name] = scores
+                logger.info("Ragas eval done for agent %s: faithfulness=%.2f", agent_name, scores["faithfulness"])
+            except asyncio.TimeoutError:
+                logger.warning("Ragas timed out for agent %s, using default scores", agent_name)
+                eval_scores[agent_name] = _default_scores()
             except Exception as exc:
-                logger.warning("Ragas evaluation failed for agent %s: %s", agent_name, exc, exc_info=True)
+                logger.warning("Ragas failed for agent %s: %s", agent_name, exc, exc_info=True)
                 eval_scores[agent_name] = _default_scores()
 
         if eval_scores:
@@ -74,12 +85,10 @@ async def run_ragas_evaluation(
                 store_eval_scores(scan_id, repo_id, eval_scores),
                 upload_eval_log(scan_id, {"scan_id": scan_id, "scores": eval_scores}),
             )
-            logger.info("Ragas evaluation complete for scan %s", scan_id)
+            logger.info("Ragas evaluation complete for scan %s — %d agents scored", scan_id, len(eval_scores))
 
-    except ImportError:
-        logger.warning("Ragas not available, skipping evaluation")
     except Exception as exc:
-        logger.error("Ragas evaluation error for scan %s: %s", scan_id, exc)
+        logger.error("Ragas evaluation error for scan %s: %s", scan_id, exc, exc_info=True)
 
 
 def _build_questions_for_agent(agent_name: str, output: Any) -> list[dict]:
