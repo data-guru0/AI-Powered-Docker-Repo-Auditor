@@ -183,6 +183,12 @@ jobs:
           tags: |
             ${{ env.ECR_REGISTRY }}/${{ env.PROJECT_NAME }}-${{ steps.meta.outputs.environment }}-frontend:${{ steps.meta.outputs.frontend_tag }}
             ${{ env.ECR_REGISTRY }}/${{ env.PROJECT_NAME }}-${{ steps.meta.outputs.environment }}-frontend:latest
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
+            NEXT_PUBLIC_WS_URL=${{ secrets.NEXT_PUBLIC_WS_URL }}
+            NEXT_PUBLIC_COGNITO_REGION=us-east-1
+            NEXT_PUBLIC_COGNITO_USER_POOL_ID=${{ secrets.COGNITO_USER_POOL_ID }}
+            NEXT_PUBLIC_COGNITO_CLIENT_ID=${{ secrets.COGNITO_CLIENT_ID }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
