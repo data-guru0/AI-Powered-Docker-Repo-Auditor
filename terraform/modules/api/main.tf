@@ -1,0 +1,145 @@
+resource "aws_apigatewayv2_api" "websocket" {
+  name                       = "${var.project_name}-${var.environment}-ws"
+  protocol_type              = "WEBSOCKET"
+  route_selection_expression = "$request.body.action"
+  tags                       = merge(var.tags, { Name = "${var.project_name}-${var.environment}-ws" })
+}
+
+resource "aws_apigatewayv2_stage" "websocket" {
+  api_id      = aws_apigatewayv2_api.websocket.id
+  name        = var.environment
+  auto_deploy = true
+
+  default_route_settings {
+    throttling_burst_limit = 1000
+    throttling_rate_limit  = 500
+  }
+
+
+  tags = merge(var.tags, { Name = "${var.project_name}-${var.environment}-ws-stage" })
+}
+
+resource "aws_cloudwatch_log_group" "websocket" {
+  name              = "/aws/apigateway/${var.project_name}-${var.environment}-ws"
+  retention_in_days = 30
+  tags              = var.tags
+}
+
+data "aws_iam_policy_document" "lambda_assume" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["lambda.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "ws_authorizer" {
+  name               = "${var.project_name}-${var.environment}-ws-authorizer"
+  assume_role_policy = data.aws_iam_policy_document.lambda_assume.json
+  tags               = var.tags
+}
+
+resource "aws_iam_role_policy_attachment" "ws_authorizer_basic" {
+  role       = aws_iam_role.ws_authorizer.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+}
+
+resource "aws_lambda_function" "ws_authorizer" {
+  function_name    = "${var.project_name}-${var.environment}-ws-authorizer"
+  role             = aws_iam_role.ws_authorizer.arn
+  runtime          = "python3.12"
+  handler          = "index.handler"
+  timeout          = 10
+  memory_size      = 128
+  filename         = data.archive_file.ws_authorizer.output_path
+  source_code_hash = data.archive_file.ws_authorizer.output_base64sha256
+
+  environment {
+    variables = {
+      COGNITO_USER_POOL_ID = var.cognito_user_pool_id
+      COGNITO_CLIENT_ID    = var.cognito_client_id
+      AWS_ACCOUNT_REGION   = var.aws_region
+    }
+  }
+
+  tags = merge(var.tags, { Name = "${var.project_name}-${var.environment}-ws-authorizer" })
+}
+
+data "archive_file" "ws_authorizer" {
+  type        = "zip"
+  output_path = "${path.module}/ws_authorizer.zip"
+  source {
+    filename = "index.py"
+    content  = <<-EOF
+import os, json, urllib.request
+from jose import jwt, jwk
+
+REGION = os.environ["AWS_ACCOUNT_REGION"]
+USER_POOL_ID = os.environ["COGNITO_USER_POOL_ID"]
+CLIENT_ID = os.environ["COGNITO_CLIENT_ID"]
+JWKS_URL = f"https://cognito-idp.{REGION}.amazonaws.com/{USER_POOL_ID}/.well-known/jwks.json"
+_jwks = None
+
+def get_jwks():
+    global _jwks
+    if not _jwks:
+        with urllib.request.urlopen(JWKS_URL) as r:
+            _jwks = json.loads(r.read())
+    return _jwks
+
+def handler(event, context):
+    token = (event.get("queryStringParameters") or {}).get("token", "")
+    try:
+        kid = jwt.get_unverified_headers(token)["kid"]
+        key = next(k for k in get_jwks()["keys"] if k["kid"] == kid)
+        claims = jwt.decode(token, jwk.construct(key), algorithms=["RS256"], audience=CLIENT_ID)
+        return {
+            "principalId": claims["sub"],
+            "policyDocument": {"Version": "2012-10-17", "Statement": [{"Action": "execute-api:Invoke", "Effect": "Allow", "Resource": event["methodArn"]}]},
+            "context": {"userId": claims["sub"]}
+        }
+    except Exception:
+        raise Exception("Unauthorized")
+EOF
+  }
+}
+
+resource "aws_cloudwatch_log_group" "ws_authorizer" {
+  name              = "/aws/lambda/${aws_lambda_function.ws_authorizer.function_name}"
+  retention_in_days = 30
+  tags              = var.tags
+}
+
+resource "aws_apigatewayv2_authorizer" "cognito" {
+  api_id           = aws_apigatewayv2_api.websocket.id
+  authorizer_type  = "REQUEST"
+  name             = "cognito-authorizer"
+  identity_sources = ["route.request.querystring.token"]
+  authorizer_uri   = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${aws_lambda_function.ws_authorizer.arn}/invocations"
+}
+
+resource "aws_lambda_permission" "api_gateway_authorizer" {
+  statement_id  = "AllowAPIGateway"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.ws_authorizer.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.websocket.execution_arn}/*/*"
+}
+
+resource "aws_iam_policy" "apigw_post_to_connection" {
+  name        = "${var.project_name}-${var.environment}-apigw-post"
+  description = "Allow posting to WebSocket connections"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["execute-api:ManageConnections"]
+        Resource = "${aws_apigatewayv2_api.websocket.execution_arn}/${var.environment}/POST/@connections/*"
+      }
+    ]
+  })
+}

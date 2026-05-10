@@ -1,0 +1,13 @@
+output "scan_jobs_table_name" { value = aws_dynamodb_table.scan_jobs.name }
+output "scan_jobs_table_arn" { value = aws_dynamodb_table.scan_jobs.arn }
+output "scan_results_table_name" { value = aws_dynamodb_table.scan_results.name }
+output "scan_results_table_arn" { value = aws_dynamodb_table.scan_results.arn }
+output "connections_table_name" { value = aws_dynamodb_table.connections.name }
+output "connections_table_arn" { value = aws_dynamodb_table.connections.arn }
+output "ws_connections_table_name" { value = aws_dynamodb_table.ws_connections.name }
+output "ws_connections_table_arn" { value = aws_dynamodb_table.ws_connections.arn }
+output "eval_results_table_name" { value = aws_dynamodb_table.eval_results.name }
+output "eval_results_table_arn" { value = aws_dynamodb_table.eval_results.arn }
+output "chat_history_table_name" { value = aws_dynamodb_table.chat_history.name }
+output "chat_history_table_arn" { value = aws_dynamodb_table.chat_history.arn }
+output "dynamodb_full_policy_arn" { value = aws_iam_policy.dynamodb_full.arn }

@@ -1,0 +1,118 @@
+name: Terraform
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "terraform/**"
+  pull_request:
+    branches: [main]
+    paths:
+      - "terraform/**"
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to deploy"
+        required: true
+        default: "dev"
+        type: choice
+        options: [dev, staging, prod]
+      action:
+        description: "Terraform action"
+        required: true
+        default: "plan"
+        type: choice
+        options: [plan, apply, destroy]
+
+env:
+  AWS_REGION: us-east-1
+  TF_VERSION: "1.7.0"
+
+jobs:
+  terraform:
+    name: Terraform ${{ github.event.inputs.action || 'plan' }}
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+    defaults:
+      run:
+        working-directory: terraform
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set environment
+        id: env
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "environment=${{ github.event.inputs.environment }}" >> "$GITHUB_OUTPUT"
+            echo "action=${{ github.event.inputs.action }}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.ref }}" == "refs/heads/main" ]; then
+            echo "environment=prod" >> "$GITHUB_OUTPUT"
+            echo "action=apply" >> "$GITHUB_OUTPUT"
+          else
+            echo "environment=dev" >> "$GITHUB_OUTPUT"
+            echo "action=plan" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_TERRAFORM_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform Init
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
+            -backend-config="key=${{ steps.env.outputs.environment }}/terraform.tfstate" \
+            -backend-config="region=${{ env.AWS_REGION }}" \
+            -backend-config="dynamodb_table=${{ secrets.TF_LOCK_TABLE }}"
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+
+      - name: Terraform Plan
+        id: plan
+        run: |
+          terraform plan \
+            -var-file="environments/${{ steps.env.outputs.environment }}.tfvars" \
+            -var="aws_account_id=${{ secrets.AWS_ACCOUNT_ID }}" \
+            -out=tfplan \
+            -no-color 2>&1 | tee plan_output.txt
+          echo "exitcode=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Post plan to PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const plan = fs.readFileSync('terraform/plan_output.txt', 'utf8');
+            const truncated = plan.length > 65000 ? plan.substring(0, 65000) + '\n... (truncated)' : plan;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## Terraform Plan - ${{ steps.env.outputs.environment }}\n\`\`\`\n${truncated}\n\`\`\``
+            });
+
+      - name: Terraform Apply
+        if: steps.env.outputs.action == 'apply' && github.event_name != 'pull_request'
+        run: terraform apply -auto-approve tfplan
+
+      - name: Terraform Destroy
+        if: steps.env.outputs.action == 'destroy' && github.event_name == 'workflow_dispatch'
+        run: |
+          terraform destroy \
+            -var-file="environments/${{ steps.env.outputs.environment }}.tfvars" \
+            -var="aws_account_id=${{ secrets.AWS_ACCOUNT_ID }}" \
+            -auto-approve

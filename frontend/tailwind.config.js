@@ -1,0 +1,71 @@
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  content: [
+    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+  ],
+  theme: {
+    extend: {
+      colors: {
+        "bg-base": "#070711",
+        "bg-card": "#0e0e1a",
+        "bg-elevated": "#14141f",
+        "bg-hover": "#1a1a28",
+        "surface-border": "#1e1e30",
+        "surface-border-bright": "#2a2a40",
+        "accent-cyan": "#00d4ff",
+        "accent-cyan-dim": "#00a8cc",
+        "accent-purple": "#8b5cf6",
+        "accent-purple-dim": "#6d44c9",
+        "accent-green": "#10b981",
+        "accent-red": "#ef4444",
+        "accent-orange": "#f97316",
+        "accent-yellow": "#eab308",
+        "accent-blue": "#3b82f6",
+        "text-primary": "#f1f5f9",
+        "text-secondary": "#94a3b8",
+        "text-muted": "#475569",
+        "severity-critical": "#dc2626",
+        "severity-high": "#f97316",
+        "severity-medium": "#eab308",
+        "severity-low": "#3b82f6",
+        "severity-info": "#6b7280",
+        "grade-a": "#10b981",
+        "grade-b": "#00d4ff",
+        "grade-c": "#eab308",
+        "grade-d": "#f97316",
+        "grade-f": "#ef4444",
+        "diff-security": "#ef444420",
+        "diff-bloat": "#f9731620",
+        "diff-cache": "#eab30820",
+        "diff-best-practice": "#3b82f620",
+      },
+      fontFamily: {
+        sans: ["var(--font-space-grotesk)", "system-ui", "sans-serif"],
+        mono: ["var(--font-jetbrains-mono)", "Courier New", "monospace"],
+      },
+      animation: {
+        "ring-fill": "ring-fill 1s ease-out forwards",
+        "fade-in": "fade-in 0.3s ease-out",
+        "slide-up": "slide-up 0.3s ease-out",
+        "pulse-slow": "pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+      },
+      keyframes: {
+        "ring-fill": {
+          "0%": { strokeDashoffset: "283" },
+          "100%": { strokeDashoffset: "var(--target-offset)" },
+        },
+        "fade-in": {
+          "0%": { opacity: "0" },
+          "100%": { opacity: "1" },
+        },
+        "slide-up": {
+          "0%": { opacity: "0", transform: "translateY(8px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+      },
+    },
+  },
+  plugins: [],
+};

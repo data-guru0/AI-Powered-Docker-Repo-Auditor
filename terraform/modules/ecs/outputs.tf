@@ -1,0 +1,13 @@
+output "cluster_id" { value = aws_ecs_cluster.main.id }
+output "cluster_name" { value = aws_ecs_cluster.main.name }
+output "cluster_arn" { value = aws_ecs_cluster.main.arn }
+output "task_role_arn" { value = aws_iam_role.task.arn }
+output "task_execution_role_arn" { value = aws_iam_role.task_execution.arn }
+output "frontend_alb_dns" { value = aws_lb.frontend.dns_name }
+output "frontend_alb_arn" { value = aws_lb.frontend.arn }
+output "frontend_alb_zone_id" { value = aws_lb.frontend.zone_id }
+output "backend_alb_dns" { value = aws_lb.backend.dns_name }
+output "backend_alb_arn" { value = aws_lb.backend.arn }
+output "backend_alb_zone_id" { value = aws_lb.backend.zone_id }
+output "backend_security_group_id" { value = aws_security_group.backend.id }
+output "worker_security_group_id" { value = aws_security_group.worker.id }
