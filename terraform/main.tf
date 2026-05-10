@@ -195,6 +195,10 @@ resource "aws_apigatewayv2_integration" "backend" {
   integration_type   = "HTTP_PROXY"
   integration_uri    = "http://${module.ecs.backend_alb_dns}/api/v1/ws/connect"
   integration_method = "POST"
+  request_parameters = {
+    "integration.request.header.x-connection-id" = "$context.connectionId"
+    "integration.request.querystring.jobId"       = "$request.querystring.jobId"
+  }
 }
 
 resource "aws_apigatewayv2_integration" "ws_disconnect" {
@@ -202,6 +206,9 @@ resource "aws_apigatewayv2_integration" "ws_disconnect" {
   integration_type   = "HTTP_PROXY"
   integration_uri    = "http://${module.ecs.backend_alb_dns}/api/v1/ws/disconnect"
   integration_method = "POST"
+  request_parameters = {
+    "integration.request.header.x-connection-id" = "$context.connectionId"
+  }
 }
 
 resource "aws_apigatewayv2_integration" "ws_message" {
@@ -209,6 +216,9 @@ resource "aws_apigatewayv2_integration" "ws_message" {
   integration_type   = "HTTP_PROXY"
   integration_uri    = "http://${module.ecs.backend_alb_dns}/api/v1/ws/message"
   integration_method = "POST"
+  request_parameters = {
+    "integration.request.header.x-connection-id" = "$context.connectionId"
+  }
 }
 
 resource "aws_apigatewayv2_route" "connect" {

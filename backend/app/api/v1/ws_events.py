@@ -8,8 +8,9 @@ logger = logging.getLogger(__name__)
 
 @router.post("/ws/connect")
 async def ws_connect(request: Request):
-    connection_id = request.headers.get("x-amzn-apigateway-connectionid", "")
+    connection_id = request.headers.get("x-connection-id", "")
     job_id = request.query_params.get("jobId", "")
+    logger.info("WS connect: conn=%s job=%s headers=%s", connection_id, job_id, dict(request.headers))
     if connection_id and job_id:
         await save_ws_connection(job_id, connection_id)
         logger.info("WebSocket connected: conn=%s job=%s", connection_id, job_id)
@@ -18,7 +19,7 @@ async def ws_connect(request: Request):
 
 @router.post("/ws/disconnect")
 async def ws_disconnect(request: Request):
-    connection_id = request.headers.get("x-amzn-apigateway-connectionid", "")
+    connection_id = request.headers.get("x-connection-id", "")
     if connection_id:
         await delete_ws_connection(connection_id)
         logger.info("WebSocket disconnected: conn=%s", connection_id)
@@ -27,7 +28,7 @@ async def ws_disconnect(request: Request):
 
 @router.post("/ws/message")
 async def ws_message(request: Request):
-    connection_id = request.headers.get("x-amzn-apigateway-connectionid", "")
+    connection_id = request.headers.get("x-connection-id", "")
     try:
         body = await request.json()
         if body.get("action") == "subscribe":
