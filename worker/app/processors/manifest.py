@@ -63,6 +63,8 @@ async def _fetch_ecr_manifest(
     import boto3
     try:
         region = creds.get("region", "us-east-1")
+        account_id = creds.get("accountId", "")
+        registry_uri = f"{account_id}.dkr.ecr.{region}.amazonaws.com" if account_id else ""
         client = boto3.client(
             "ecr",
             region_name=region,
@@ -76,9 +78,11 @@ async def _fetch_ecr_manifest(
         )
         if resp.get("images"):
             manifest = json.loads(resp["images"][0]["imageManifest"])
+            full_uri = f"{registry_uri}/{repo_id}:{tag}" if registry_uri else f"{repo_id}:{tag}"
             return {
                 "repoId": repo_id,
                 "tag": tag,
+                "imageUri": full_uri,
                 "manifest": manifest,
             }
         return {"repoId": repo_id, "tag": tag}

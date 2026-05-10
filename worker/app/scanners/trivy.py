@@ -7,12 +7,23 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def _build_image_target(repo_id: str, image_id: Optional[str], user_creds: dict) -> str:
+    tag = image_id or "latest"
+    if "accessKeyId" in user_creds and "accountId" in user_creds:
+        region = user_creds.get("region", "us-east-1")
+        account = user_creds["accountId"]
+        return f"{account}.dkr.ecr.{region}.amazonaws.com/{repo_id}:{tag}"
+    if "username" in user_creds:
+        return f"{repo_id}:{tag}"
+    return f"{repo_id}:{tag}"
+
+
 async def run_trivy_scan(
     repo_id: str,
     image_id: Optional[str],
     user_creds: dict,
 ) -> dict:
-    target = f"{repo_id}:{image_id}" if image_id else repo_id
+    target = _build_image_target(repo_id, image_id, user_creds)
 
     payload = {
         "target": target,

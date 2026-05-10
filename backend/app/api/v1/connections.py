@@ -75,6 +75,7 @@ async def connect_ecr(
             "accessKeyId": credentials.accessKeyId,
             "secretAccessKey": credentials.secretAccessKey,
             "region": credentials.region,
+            "accountId": account_id,
         },
     )
 
