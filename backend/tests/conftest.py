@@ -1,8 +1,9 @@
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 from app.main import app
+from app.core.auth import get_current_user
 
 
 @pytest.fixture
@@ -12,11 +13,12 @@ def mock_user():
 
 @pytest_asyncio.fixture
 async def client(mock_user):
-    with patch("app.core.auth.get_current_user", return_value=mock_user):
-        async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
-        ) as ac:
-            yield ac
+    app.dependency_overrides[get_current_user] = lambda: mock_user
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as ac:
+        yield ac
+    app.dependency_overrides.clear()
 
 
 @pytest.fixture
