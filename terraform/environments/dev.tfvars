@@ -18,3 +18,9 @@ ses_from_email     = "sudhanshugusain45@gmail.com"
 alarm_email        = "sudhanshugusain45@gmail.com"
 github_org         = "data-guru0"
 github_repo        = "TESTING-MAJOR-22"
+
+# Observability — fill in after creating accounts
+# sentry_dsn                   = "https://xxx@oXXX.ingest.sentry.io/xxx"
+# sentry_dsn_frontend          = "https://xxx@oXXX.ingest.sentry.io/xxx"
+# otel_exporter_otlp_endpoint  = "https://otlp-gateway-prod-us-east-0.grafana.net/otlp"
+# otel_exporter_otlp_headers   = "Authorization=Basic <base64(instanceId:apiKey)>"

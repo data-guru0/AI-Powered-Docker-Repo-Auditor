@@ -178,12 +178,16 @@ module "ecs" {
   sqs_consumer_policy_arn  = module.queue.sqs_consumer_policy_arn
   invoke_trivy_policy_arn  = module.lambda.invoke_trivy_policy_arn
   apigw_post_policy_arn    = module.api.apigw_post_policy_arn
-  frontend_min_tasks       = var.frontend_min_tasks
-  backend_min_tasks        = var.backend_min_tasks
-  backend_max_tasks        = var.backend_max_tasks
-  worker_min_tasks         = var.worker_min_tasks
-  worker_max_tasks         = var.worker_max_tasks
-  tags                     = local.common_tags
+  frontend_min_tasks          = var.frontend_min_tasks
+  backend_min_tasks           = var.backend_min_tasks
+  backend_max_tasks           = var.backend_max_tasks
+  worker_min_tasks            = var.worker_min_tasks
+  worker_max_tasks            = var.worker_max_tasks
+  sentry_dsn                  = var.sentry_dsn
+  sentry_dsn_frontend         = var.sentry_dsn_frontend
+  otel_exporter_otlp_endpoint = var.otel_exporter_otlp_endpoint
+  otel_exporter_otlp_headers  = var.otel_exporter_otlp_headers
+  tags                        = local.common_tags
 }
 
 # Lambda integration for $connect — receives connectionId natively via event.requestContext

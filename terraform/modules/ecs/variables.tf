@@ -62,6 +62,26 @@ variable "worker_max_tasks" {
   type    = number
   default = 4
 }
+variable "sentry_dsn" {
+  type    = string
+  default = ""
+}
+
+variable "sentry_dsn_frontend" {
+  type    = string
+  default = ""
+}
+
+variable "otel_exporter_otlp_endpoint" {
+  type    = string
+  default = ""
+}
+
+variable "otel_exporter_otlp_headers" {
+  type    = string
+  default = ""
+}
+
 variable "tags" {
   type    = map(string)
   default = {}

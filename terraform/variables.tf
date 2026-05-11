@@ -89,6 +89,31 @@ variable "github_repo" {
   description = "GitHub repository name"
 }
 
+variable "sentry_dsn" {
+  type        = string
+  default     = ""
+  description = "Sentry DSN for error monitoring (backend and worker)"
+}
+
+variable "sentry_dsn_frontend" {
+  type        = string
+  default     = ""
+  description = "Sentry DSN for frontend error monitoring (baked into Next.js build)"
+}
+
+variable "otel_exporter_otlp_endpoint" {
+  type        = string
+  default     = ""
+  description = "Grafana Cloud OTLP endpoint for traces and metrics"
+}
+
+variable "otel_exporter_otlp_headers" {
+  type        = string
+  default     = ""
+  description = "Grafana Cloud OTLP auth header (Authorization=Basic <base64(instanceId:apiKey)>)"
+  sensitive   = true
+}
+
 variable "tags" {
   type    = map(string)
   default = {}

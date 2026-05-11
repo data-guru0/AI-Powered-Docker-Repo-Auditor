@@ -369,7 +369,9 @@ resource "aws_ecs_task_definition" "frontend" {
         { name = "NEXT_PUBLIC_AWS_REGION", value = var.aws_region },
         { name = "NEXT_PUBLIC_COGNITO_USER_POOL_ID", value = var.cognito_user_pool_id },
         { name = "NEXT_PUBLIC_COGNITO_CLIENT_ID", value = var.cognito_client_id },
-        { name = "NEXT_PUBLIC_COGNITO_IDENTITY_POOL_ID", value = var.cognito_identity_pool_id }
+        { name = "NEXT_PUBLIC_COGNITO_IDENTITY_POOL_ID", value = var.cognito_identity_pool_id },
+        { name = "NEXT_PUBLIC_SENTRY_DSN", value = var.sentry_dsn_frontend },
+        { name = "SENTRY_DSN", value = var.sentry_dsn_frontend }
       ]
 
       logConfiguration = {
@@ -431,7 +433,11 @@ resource "aws_ecs_task_definition" "backend" {
         { name = "SECRET_PREFIX", value = var.secret_prefix },
         { name = "WEBSOCKET_API_ENDPOINT", value = var.websocket_execution_arn },
         { name = "LANGCHAIN_TRACING_V2", value = "true" },
-        { name = "LANGCHAIN_PROJECT", value = "${var.project_name}-${var.environment}" }
+        { name = "LANGCHAIN_PROJECT", value = "${var.project_name}-${var.environment}" },
+        { name = "SENTRY_DSN", value = var.sentry_dsn },
+        { name = "OTEL_EXPORTER_OTLP_ENDPOINT", value = var.otel_exporter_otlp_endpoint },
+        { name = "OTEL_EXPORTER_OTLP_HEADERS", value = var.otel_exporter_otlp_headers },
+        { name = "OTEL_SERVICE_NAME", value = "${var.project_name}-backend-${var.environment}" }
       ]
 
       secrets = [
@@ -493,7 +499,11 @@ resource "aws_ecs_task_definition" "worker" {
         { name = "OPENAI_API_KEY_SECRET_NAME", value = var.openai_secret_name },
         { name = "LANGSMITH_API_KEY_SECRET_NAME", value = var.langsmith_secret_name },
         { name = "LANGCHAIN_TRACING_V2", value = "true" },
-        { name = "LANGCHAIN_PROJECT", value = "${var.project_name}-${var.environment}" }
+        { name = "LANGCHAIN_PROJECT", value = "${var.project_name}-${var.environment}" },
+        { name = "SENTRY_DSN", value = var.sentry_dsn },
+        { name = "OTEL_EXPORTER_OTLP_ENDPOINT", value = var.otel_exporter_otlp_endpoint },
+        { name = "OTEL_EXPORTER_OTLP_HEADERS", value = var.otel_exporter_otlp_headers },
+        { name = "OTEL_SERVICE_NAME", value = "${var.project_name}-worker-${var.environment}" }
       ]
 
       logConfiguration = {

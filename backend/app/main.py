@@ -36,6 +36,9 @@ app.add_middleware(
 )
 app.add_middleware(RequestIdMiddleware)
 
+from app.core.telemetry import setup_telemetry
+setup_telemetry(app)
+
 app.include_router(api_router, prefix="/api/v1")
 app.include_router(websocket_router)
 

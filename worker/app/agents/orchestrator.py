@@ -1,8 +1,10 @@
 import asyncio
 import json
+import time
 import uuid
 from datetime import datetime, timezone
 from typing import Optional
+from opentelemetry import trace as otel_trace
 from app.agents.cve_analyst import run_cve_analyst
 from app.agents.bloat_detective import run_bloat_detective
 from app.agents.base_image_strategist import run_base_image_strategist
@@ -23,9 +25,21 @@ from app.services.s3 import upload_scan_report
 from app.services.websocket import publish_progress
 from app.services.ses import send_scan_completed_email
 from app.services.dynamodb import get_user_credentials
+import app.core.telemetry as tel
 import logging
 
 logger = logging.getLogger(__name__)
+
+_tracer = otel_trace.get_tracer("docker-auditor.orchestrator")
+
+
+async def _timed(coro, agent_name: str):
+    t = time.perf_counter()
+    try:
+        return await coro
+    finally:
+        if tel.agent_duration:
+            tel.agent_duration.record(time.perf_counter() - t, {"agent": agent_name})
 
 
 async def run_orchestrator(
@@ -34,6 +48,32 @@ async def run_orchestrator(
     repo_id: str,
     image_id: Optional[str],
 ) -> None:
+    if tel.scans_started:
+        tel.scans_started.add(1)
+
+    _start = time.perf_counter()
+
+    with _tracer.start_as_current_span(
+        "scan.job",
+        attributes={"job_id": job_id, "repo_id": repo_id},
+    ) as _span:
+        try:
+            await _orchestrate(job_id, user_id, repo_id, image_id, _span)
+            if tel.scans_completed:
+                tel.scans_completed.add(1)
+        except Exception as exc:
+            from opentelemetry.trace import StatusCode
+            _span.set_status(StatusCode.ERROR, str(exc))
+            _span.record_exception(exc)
+            if tel.scans_failed:
+                tel.scans_failed.add(1)
+            raise
+        finally:
+            if tel.scan_duration:
+                tel.scan_duration.record(time.perf_counter() - _start, {"repo_id": repo_id})
+
+
+async def _orchestrate(job_id, user_id, repo_id, image_id, span) -> None:
     scan_id = str(uuid.uuid4())
     scan_date = datetime.now(timezone.utc).isoformat()
 
@@ -41,17 +81,19 @@ async def run_orchestrator(
     await update_job_status(job_id, "running", 10, "Fetching image manifest")
 
     user_creds = await get_user_credentials(user_id)
-
     manifest = await fetch_manifest(repo_id, image_id, user_creds)
 
     await publish_progress(job_id, "running", 20, "Running Trivy scan")
     await update_job_status(job_id, "running", 20, "Running Trivy scan")
 
+    t_scan = time.perf_counter()
     trivy_results, inspector_results, layer_data = await asyncio.gather(
         run_trivy_scan(repo_id, image_id, user_creds),
         run_inspector_scan(repo_id, image_id, user_creds),
         fetch_layer_data(repo_id, image_id, user_creds),
     )
+    if tel.agent_duration:
+        tel.agent_duration.record(time.perf_counter() - t_scan, {"agent": "scanners"})
 
     await publish_progress(job_id, "running", 40, "Running AI agent analysis")
     await update_job_status(job_id, "running", 40, "Running AI agent analysis")
@@ -59,10 +101,10 @@ async def run_orchestrator(
     previous_scan = await get_previous_scan(user_id, repo_id)
 
     cve_findings, bloat_findings, base_image_analysis, compliance_findings = await asyncio.gather(
-        asyncio.wait_for(run_cve_analyst(trivy_results, inspector_results, previous_scan), timeout=120),
-        asyncio.wait_for(run_bloat_detective(layer_data, manifest), timeout=120),
-        asyncio.wait_for(run_base_image_strategist(manifest), timeout=120),
-        asyncio.wait_for(run_compliance_checker(manifest, trivy_results), timeout=120),
+        asyncio.wait_for(_timed(run_cve_analyst(trivy_results, inspector_results, previous_scan), "cve_analyst"), timeout=120),
+        asyncio.wait_for(_timed(run_bloat_detective(layer_data, manifest), "bloat_detective"), timeout=120),
+        asyncio.wait_for(_timed(run_base_image_strategist(manifest), "base_image_strategist"), timeout=120),
+        asyncio.wait_for(_timed(run_compliance_checker(manifest, trivy_results), "compliance_checker"), timeout=120),
         return_exceptions=True,
     )
     if isinstance(cve_findings, BaseException):
@@ -83,7 +125,7 @@ async def run_orchestrator(
 
     try:
         dockerfile_result = await asyncio.wait_for(
-            run_dockerfile_optimizer(manifest, cve_findings, bloat_findings, base_image_analysis),
+            _timed(run_dockerfile_optimizer(manifest, cve_findings, bloat_findings, base_image_analysis), "dockerfile_optimizer"),
             timeout=120,
         )
     except asyncio.TimeoutError:
@@ -98,7 +140,7 @@ async def run_orchestrator(
 
     try:
         risk_result = await asyncio.wait_for(
-            run_risk_scorer(cve_findings, bloat_findings, base_image_analysis, all_findings, previous_scan),
+            _timed(run_risk_scorer(cve_findings, bloat_findings, base_image_analysis, all_findings, previous_scan), "risk_scorer"),
             timeout=120,
         )
     except asyncio.TimeoutError:
@@ -119,6 +161,10 @@ async def run_orchestrator(
         "medium": sum(1 for f in all_findings if f.get("severity") == "medium" and f.get("category") == "cve"),
         "low": sum(1 for f in all_findings if f.get("severity") == "low" and f.get("category") == "cve"),
     }
+
+    span.set_attribute("cve.critical", cve_count["critical"])
+    span.set_attribute("cve.high", cve_count["high"])
+    span.set_attribute("findings.total", len(all_findings))
 
     scan_record = {
         "scanId": scan_id,
