@@ -24,4 +24,4 @@ sentry_dsn          = "https://e5940f7c2fc5c2804b7d618c28e177ce@o451136979415859
 sentry_dsn_frontend = "https://ab2fc5f13383b74e531e8094feb53229@o4511369794158592.ingest.us.sentry.io/4511369866051584"
 
 otel_exporter_otlp_endpoint = "https://otlp-gateway-prod-ap-south-1.grafana.net/otlp"
-otel_exporter_otlp_headers  = "Authorization=Basic MTc2MjMwNTpnbGNfZXlKdklqb2lNVGMyTWpNd05TSXNJbTRpT2lKNWIzVnlMV2R5WVdaaGJtRXRkRzlyWlc0aUxDSnJJam9pY1d0T05FRTJXRFUxWTFZek5sZHBaekk0YXpaeWFUQlRJaXdpYlNJNmV5SnlJam9pY0hKdlpDMWhjQzF6YjNWMGFDMXhJbjE5"
+otel_exporter_otlp_headers  = "Authorization=Basic%20MTYzMTgxMjpnbGNfZXlKdklqb2lNVGMyTWpNd05TSXNJbTRpT2lKNWIzVnlMV2R5WVdaaGJtRXRkRzlyWlc0aUxDSnJJam9pY1d0T05FRTJXRFUxWVZek5sZHBaekk0YXpaeWFUQlRJaXdpYlNJNmV5SnlJam9pY0hKdlpDMWhjQzF6YjNWMGFDMHhJbjE5"
