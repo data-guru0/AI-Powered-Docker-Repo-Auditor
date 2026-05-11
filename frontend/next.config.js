@@ -16,8 +16,11 @@ const nextConfig = {
   },
 };
 
-module.exports = withSentryConfig(nextConfig, {
-  silent: true,
-  hideSourceMaps: true,
-  disableLogger: true,
-});
+// Only apply Sentry webpack plugin when auth token is present (not in Docker builds)
+module.exports = process.env.SENTRY_AUTH_TOKEN
+  ? withSentryConfig(nextConfig, {
+      silent: true,
+      hideSourceMaps: true,
+      disableLogger: true,
+    })
+  : nextConfig;
