@@ -109,7 +109,7 @@ resource "aws_iam_role_policy" "task_ses_xray" {
       },
       {
         Effect   = "Allow"
-        Action   = ["ecr:DescribeImages", "ecr:ListImages", "ecr:GetAuthorizationToken"]
+        Action   = ["ecr:DescribeImages", "ecr:ListImages", "ecr:GetAuthorizationToken", "ecr:BatchGetImage", "ecr:GetDownloadUrlForLayer", "ecr:BatchCheckLayerAvailability"]
         Resource = "*"
       }
     ]

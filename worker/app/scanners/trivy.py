@@ -58,15 +58,15 @@ async def _run_trivy_local(target: str, user_creds: dict) -> dict:
     env.setdefault("TRIVY_CACHE_DIR", "/trivy-cache")
 
     if "accessKeyId" in user_creds:
-        env["AWS_ACCESS_KEY_ID"] = user_creds["accessKeyId"]
-        env["AWS_SECRET_ACCESS_KEY"] = user_creds["secretAccessKey"]
+        # ECR repos are in the same AWS account as the worker.
+        # Use the worker's task role credentials (from ECS metadata) so Trivy
+        # can pull any ECR image without needing user-stored keys.
+        # Only set region; AWS_CONTAINER_CREDENTIALS_RELATIVE_URI handles the rest.
         env["AWS_DEFAULT_REGION"] = user_creds.get("region", "us-east-1")
-        try:
-            username, password = _ecr_docker_creds(user_creds)
-            env["TRIVY_USERNAME"] = username
-            env["TRIVY_PASSWORD"] = password
-        except Exception as exc:
-            logger.warning("Could not get ECR docker creds: %s", exc)
+        # Remove any user key overrides so task role creds are used
+        env.pop("AWS_ACCESS_KEY_ID", None)
+        env.pop("AWS_SECRET_ACCESS_KEY", None)
+        env.pop("AWS_SESSION_TOKEN", None)
     elif "username" in user_creds:
         env["TRIVY_USERNAME"] = user_creds["username"]
         env["TRIVY_PASSWORD"] = user_creds.get("accessToken", "")
@@ -74,7 +74,6 @@ async def _run_trivy_local(target: str, user_creds: dict) -> dict:
     cmd = [
         TRIVY_BIN, "image",
         "--format", "json",
-        "--quiet",
         "--no-progress",
         "--scanners", "vuln,secret",
         "--timeout", "10m",
@@ -85,10 +84,19 @@ async def _run_trivy_local(target: str, user_creds: dict) -> dict:
         result = subprocess.run(
             cmd, capture_output=True, text=True, timeout=600, env=env
         )
+        logger.info("Trivy exit code: %d, stdout_len: %d, stderr: %s",
+                    result.returncode, len(result.stdout), result.stderr[:1000])
         if result.returncode != 0:
-            logger.error("Trivy exited %d: %s", result.returncode, result.stderr[:500])
+            logger.error("Trivy failed for %s. stdout: %s", target, result.stdout[:500])
             return {"Results": []}
-        return json.loads(result.stdout) if result.stdout.strip() else {"Results": []}
+        if not result.stdout.strip():
+            logger.warning("Trivy returned empty stdout for %s", target)
+            return {"Results": []}
+        parsed = json.loads(result.stdout)
+        results = parsed.get("Results", [])
+        vuln_count = sum(len(r.get("Vulnerabilities") or []) for r in results)
+        logger.info("Trivy found %d results blocks, %d total vulnerabilities", len(results), vuln_count)
+        return parsed
     except subprocess.TimeoutExpired:
         logger.error("Trivy scan timed out for %s", target)
         return {"Results": []}
