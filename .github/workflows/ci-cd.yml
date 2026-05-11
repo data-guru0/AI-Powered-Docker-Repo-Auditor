@@ -304,18 +304,51 @@ jobs:
 
       - name: Wait for frontend deployment
         run: |
-          aws ecs wait services-stable \
-            --cluster ${{ env.CLUSTER }} \
-            --services ${{ env.PROJECT_NAME }}-${{ env.ENV }}-frontend
+          for i in $(seq 1 60); do
+            STATUS=$(aws ecs describe-services --cluster ${{ env.CLUSTER }} \
+              --services ${{ env.PROJECT_NAME }}-${{ env.ENV }}-frontend \
+              --query "services[0].deployments[?status=='PRIMARY'].[runningCount,desiredCount,rolloutState]" \
+              --output text)
+            RUNNING=$(echo $STATUS | awk '{print $1}')
+            DESIRED=$(echo $STATUS | awk '{print $2}')
+            STATE=$(echo $STATUS | awk '{print $3}')
+            echo "Attempt $i: running=$RUNNING desired=$DESIRED state=$STATE"
+            if [ "$STATE" = "COMPLETED" ]; then echo "Deployment complete"; exit 0; fi
+            if [ "$STATE" = "FAILED" ]; then echo "Deployment failed"; exit 1; fi
+            sleep 15
+          done
+          echo "Timed out waiting for frontend"; exit 1
 
       - name: Wait for backend deployment
         run: |
-          aws ecs wait services-stable \
-            --cluster ${{ env.CLUSTER }} \
-            --services ${{ env.PROJECT_NAME }}-${{ env.ENV }}-backend
+          for i in $(seq 1 60); do
+            STATUS=$(aws ecs describe-services --cluster ${{ env.CLUSTER }} \
+              --services ${{ env.PROJECT_NAME }}-${{ env.ENV }}-backend \
+              --query "services[0].deployments[?status=='PRIMARY'].[runningCount,desiredCount,rolloutState]" \
+              --output text)
+            RUNNING=$(echo $STATUS | awk '{print $1}')
+            DESIRED=$(echo $STATUS | awk '{print $2}')
+            STATE=$(echo $STATUS | awk '{print $3}')
+            echo "Attempt $i: running=$RUNNING desired=$DESIRED state=$STATE"
+            if [ "$STATE" = "COMPLETED" ]; then echo "Deployment complete"; exit 0; fi
+            if [ "$STATE" = "FAILED" ]; then echo "Deployment failed"; exit 1; fi
+            sleep 15
+          done
+          echo "Timed out waiting for backend"; exit 1
 
       - name: Wait for worker deployment
         run: |
-          aws ecs wait services-stable \
-            --cluster ${{ env.CLUSTER }} \
-            --services ${{ env.PROJECT_NAME }}-${{ env.ENV }}-worker
+          for i in $(seq 1 60); do
+            STATUS=$(aws ecs describe-services --cluster ${{ env.CLUSTER }} \
+              --services ${{ env.PROJECT_NAME }}-${{ env.ENV }}-worker \
+              --query "services[0].deployments[?status=='PRIMARY'].[runningCount,desiredCount,rolloutState]" \
+              --output text)
+            RUNNING=$(echo $STATUS | awk '{print $1}')
+            DESIRED=$(echo $STATUS | awk '{print $2}')
+            STATE=$(echo $STATUS | awk '{print $3}')
+            echo "Attempt $i: running=$RUNNING desired=$DESIRED state=$STATE"
+            if [ "$STATE" = "COMPLETED" ]; then echo "Deployment complete"; exit 0; fi
+            if [ "$STATE" = "FAILED" ]; then echo "Deployment failed"; exit 1; fi
+            sleep 15
+          done
+          echo "Timed out waiting for worker"; exit 1
