@@ -63,10 +63,92 @@ aws sts get-caller-identity
 ```bash
 aws ses verify-email-identity --email-address sudhanshugusain45@gmail.com --region us-east-1
 ```
+
+Verify whather your email is done or not:
+
+```bash
+aws ses get-identity-verification-attributes --identities sudhanshugusain45@gmail.com --region us-east-1
+```
 Click on the link and your email is verified !!!
 
 
+## Sentry Setup
 
+### 1. Create a Sentry Account
+
+1. Go to https://sentry.io
+2. Click **Sign Up**
+3. Create your free account
+4. Verify your email address
+
+---
+
+### 2. Create Backend Project (FastAPI + Worker)
+
+1. Click **Create Project**
+2. Under **Platform**, select **FastAPI**
+3. Set the project name:
+
+```bash
+docker-auditor-backend
+```
+
+4. Click **Create Project**
+
+After creation, Sentry will show a **DSN** similar to:
+
+```bash
+https://abc123@o123456.ingest.sentry.io/789
+```
+
+Copy and save this DSN — it will be used in your backend environment variables.
+
+---
+
+## 3. Create Frontend Project (Next.js)
+
+1. Click **+ Create Project**
+2. Under **Platform**, select **Next.js**
+3. Set the project name:
+
+```bash
+docker-auditor-frontend
+```
+
+4. Click **Create Project**
+
+Sentry will again show a **DSN** similar to:
+
+```bash
+https://xyz456@o123456.ingest.sentry.io/123
+```
+
+Copy and save this DSN — it will be used in your frontend environment variables.
+
+
+### Grafana Cloud
+1. Add new connection
+2. Select OTLP
+3. SDK
+4. Python
+5. Linux
+6. Direct
+7. Geneerate a grafana token
+8. From that page I only needed two things:
+
+```bash
+
+OTLP Endpoint — shown on the page as:
+https://otlp-gateway-prod-ap-south-1.grafana.net/otlp
+
+Auth header — shown in the example command as:
+OTEL_EXPORTER_OTLP_HEADERS="Authorization=Basic%20MTYzMTgx..."
+
+Both went into terraform/environments/dev.tfvars:
+
+otel_exporter_otlp_endpoint = "https://otlp-gateway-prod-ap-south-1.grafana.net/otlp"
+otel_exporter_otlp_headers  = "Authorization=Basic%20MTYzMTgx..."
+```
 
 ### These should exist for Terraform running
 
@@ -109,6 +191,9 @@ terraform apply -var-file="environments/dev.tfvars"
 ```
 It will take 15-20 mins to setup all the infrastructure...
 
+```bash
+terraform destroy -var-file="environments/dev.tfvars"
+```
 
 
 ### OPENAI and Langfuse Secret
@@ -161,7 +246,7 @@ git push -u origin main
 GitHub → Settings → Secrets and variables → Actions → New repository secret
 
 
-Add the following 5 secrets to the repository:
+Add the following 9 secrets to the repository:
 
 | Secret Name | Value |
 |---|---|
@@ -172,77 +257,103 @@ Add the following 5 secrets to the repository:
 | `TF_LOCK_TABLE` | `docker-auditor-terraform-locks` |
 
 
+
+
+| Secret Name | Value |
+|---|---|
+| `COGNITO_USER_POOL_ID` | `us-east-1_A86f32tcr` |
+| `COGNITO_CLIENT_ID` | `3el8qdu5bdv7c0vtm03flg6vba` |
+| `NEXT_PUBLIC_API_URL` | `http://docker-auditor-dev-backend-904913202.us-east-1.elb.amazonaws.com` |
+| `NEXT_PUBLIC_WS_URL` | `wss://qdu7bk7qlj.execute-api.us-east-1.amazonaws.com/dev` |
+
+
+
+
 - TF_STATE_BUCKET is the S3 bucket
 - TF_LOCK_TABLE is the DynamoDB Table name
+---
+
+- Add SENTRY frontend DNS also in github secrets: 
+- Name: NEXT_PUBLIC_SENTRY_DSN
+- Value: https://ab2fc5f13383b74e531e8094feb53229@o4511369794158592.ingest.us.sentry.io/4511369866051584
+
+---
+### Execute the CICD Pipelines
+
+Push changes to Github and Pipeline will execute...
+
+- Terraform Pipeline
+- CICD Deployment piepline
+
+Watch pieplines go green then from terraform outputs get Public URL and open it!!
 
 
+### Security Rules to check
+
+In AWS Console:
+
+- Click Edit inbound rules
+- Find the HTTP port 80 rule
+- Change Source from 10.0.0.0/16 to 0.0.0.0/0
+- Click Save rules
+This will allow internet traffic to reach the backend ALB on port 80.
 
 
-
-### Step 7: Build and push initial images
-
+### Testing Phase
 ```bash
-FRONTEND_ECR=$(terraform output -raw frontend_ecr_url)
-BACKEND_ECR=$(terraform output -raw backend_ecr_url)
-WORKER_ECR=$(terraform output -raw worker_ecr_url)
-ECS_CLUSTER=$(terraform output -raw ecs_cluster_name)
-
-aws ecr get-login-password --region us-east-1 | \
-  docker login --username AWS --password-stdin \
-  "$(echo $FRONTEND_ECR | cut -d'/' -f1)"
-
-docker build -t "$FRONTEND_ECR:latest" --target production ./frontend
-docker build -t "$BACKEND_ECR:latest" ./backend
-docker build -t "$WORKER_ECR:latest" ./worker
-
-docker push "$FRONTEND_ECR:latest"
-docker push "$BACKEND_ECR:latest"
-docker push "$WORKER_ECR:latest"
-
-for SVC in frontend backend worker; do
-  aws ecs update-service \
-    --cluster "$ECS_CLUSTER" \
-    --service "docker-auditor-dev-${SVC}" \
-    --force-new-deployment
-done
+aws ecr create-repository --repository-name bad-image-test --region us-east-1
 ```
 
-After this, all future deployments are handled automatically by the CI/CD pipeline.
+- Create a folder bad-image/ and put these two files in it: bad-image/Dockerfile:
 
-## CI/CD
+```dockerfile
+FROM python:3.8
 
-| Branch | Action |
-|--------|--------|
-| Pull request to `main` | Runs tests, posts Terraform plan as PR comment |
-| Push to `develop` | Runs tests → builds images → deploys to dev |
-| Push to `main` | Runs tests → builds images → deploys to prod |
+RUN apt-get update
+RUN apt-get install -y curl wget git vim nano gcc build-essential libssl-dev
+RUN apt-get install -y openssh-client nmap netcat
 
-Manually trigger infrastructure changes via **Actions → Terraform → Run workflow**.
+COPY . /app
 
-## Using the application
+RUN pip install flask requests boto3 pytest black flake8 jupyter pandas numpy
 
-### Register and sign in
+ENV SECRET_KEY=mysupersecretkey123
+ENV DATABASE_PASSWORD=admin123
+ENV AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
 
-1. Open `https://yourdomain.com`
-2. Click **Sign Up**, enter email and password (min 12 chars, uppercase, number, symbol)
-3. Enter the verification code sent to your email
-4. Sign in
+EXPOSE 22
+EXPOSE 80
 
-### Connect a registry
+CMD ["python", "/app/app.py"]
 
-1. Go to the **Connections** tab
-2. Click **Add Connection**
-3. For ECR: enter your AWS account ID and region
-4. For Docker Hub: enter your username and access token
-5. Credentials are stored encrypted in Secrets Manager
+```
 
-### Run a scan
+bad-image/app.py also
 
-1. Go to **Repositories** → select a repository → select an image tag
-2. Click **Scan Image**
-3. Watch real-time agent progress stream via WebSocket
-4. View results: ring scores, CVE table, Dockerfile diff, executive summary
+```python
+print("bad image running")
+```
 
+
+```bash
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 789438508565.dkr.ecr.us-east-1.amazonaws.com
+```
+
+```bash
+docker build -t bad-image-test .
+```
+
+```bash
+docker tag bad-image-test:latest 789438508565.dkr.ecr.us-east-1.amazonaws.com/bad-image-test:latest
+```
+
+```bash
+docker push 789438508565.dkr.ecr.us-east-1.amazonaws.com/bad-image-test:latest
+```
+
+
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
 ### Understand the scores
 
 | Score | Meaning |
