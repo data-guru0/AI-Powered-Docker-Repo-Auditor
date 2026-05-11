@@ -13,10 +13,11 @@ import { ImageInventoryCard } from "@/components/dashboard/cards/ImageInventoryC
 import { CriticalAlertsCard } from "@/components/dashboard/cards/CriticalAlertsCard";
 import { SizeOverviewCard } from "@/components/dashboard/cards/SizeOverviewCard";
 import { BaseImageHealthCard } from "@/components/dashboard/cards/BaseImageHealthCard";
-import { TopRiskiestCard } from "@/components/dashboard/cards/TopRiskiestCard";
 import { UnusedImagesCard } from "@/components/dashboard/cards/UnusedImagesCard";
 import { AIRecommendationsCard } from "@/components/dashboard/cards/AIRecommendationsCard";
 import { ComplianceStatusCard } from "@/components/dashboard/cards/ComplianceStatusCard";
+import { ComplianceDetailsCard } from "@/components/dashboard/cards/ComplianceDetailsCard";
+import { CVEListCard } from "@/components/dashboard/cards/CVEListCard";
 import { CostIntelligenceCard } from "@/components/dashboard/cards/CostIntelligenceCard";
 import { ScanProgress } from "@/components/ui/ScanProgress";
 import type { ScanResult } from "@/types/scan";
@@ -205,11 +206,11 @@ export default function RepoDashboardPage() {
             <CVEBreakdownChart cveCount={scanResult.cveCount} />
           </div>
 
-          {/* Row 4: AI Recommendations + Layer Heatmap + Top Riskiest */}
+          {/* Row 4: AI Recommendations + Layer Heatmap + Compliance Details */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <AIRecommendationsCard topActions={scanResult.topActions} />
             <LayerBloatHeatmap repoId={repoId} />
-            <TopRiskiestCard repoId={repoId} scan={scanResult} />
+            <ComplianceDetailsCard scan={scanResult} />
           </div>
 
           {/* Row 5: Image Inventory + Unused Images + Cost Intelligence */}
@@ -219,7 +220,10 @@ export default function RepoDashboardPage() {
             <CostIntelligenceCard repoId={repoId} />
           </div>
 
-          {/* Row 6: All Findings */}
+          {/* Row 6: CVE List */}
+          <CVEListCard scan={scanResult} />
+
+          {/* Row 7: All Findings */}
           <div className="bg-bg-card border border-surface-border rounded-xl overflow-hidden">
             <div className="px-6 py-4 border-b border-surface-border">
               <h2 className="text-base font-semibold text-text-primary">All Findings</h2>
