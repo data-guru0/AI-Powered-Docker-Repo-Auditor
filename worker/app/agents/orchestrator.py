@@ -20,6 +20,7 @@ from app.services.dynamodb import (
     store_scan_result,
     get_previous_scan,
     update_job_status,
+    get_user_credentials,
 )
 from app.services.s3 import upload_scan_report
 from app.services.websocket import publish_progress

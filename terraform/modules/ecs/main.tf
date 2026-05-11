@@ -383,13 +383,6 @@ resource "aws_ecs_task_definition" "frontend" {
         }
       }
 
-      healthCheck = {
-        command     = ["CMD-SHELL", "wget -qO /dev/null http://localhost:3000/api/health || exit 1"]
-        interval    = 30
-        timeout     = 10
-        retries     = 5
-        startPeriod = 120
-      }
     }
   ])
 
