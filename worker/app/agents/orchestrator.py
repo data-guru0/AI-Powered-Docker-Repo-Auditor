@@ -80,18 +80,20 @@ async def _orchestrate(job_id, user_id, repo_id, image_id, span) -> None:
     await publish_progress(job_id, "running", 10, "Fetching image manifest")
     await update_job_status(job_id, "running", 10, "Fetching image manifest")
 
-    user_creds = await get_user_credentials(user_id)
-    manifest = await fetch_manifest(repo_id, image_id, user_creds)
+    with _tracer.start_as_current_span("fetch.manifest"):
+        user_creds = await get_user_credentials(user_id)
+        manifest = await fetch_manifest(repo_id, image_id, user_creds)
 
     await publish_progress(job_id, "running", 20, "Running Trivy scan")
     await update_job_status(job_id, "running", 20, "Running Trivy scan")
 
     t_scan = time.perf_counter()
-    trivy_results, inspector_results, layer_data = await asyncio.gather(
-        run_trivy_scan(repo_id, image_id, user_creds),
-        run_inspector_scan(repo_id, image_id, user_creds),
-        fetch_layer_data(repo_id, image_id, user_creds),
-    )
+    with _tracer.start_as_current_span("scanners"):
+        trivy_results, inspector_results, layer_data = await asyncio.gather(
+            run_trivy_scan(repo_id, image_id, user_creds),
+            run_inspector_scan(repo_id, image_id, user_creds),
+            fetch_layer_data(repo_id, image_id, user_creds),
+        )
     if tel.agent_duration:
         tel.agent_duration.record(time.perf_counter() - t_scan, {"agent": "scanners"})
 
@@ -100,13 +102,14 @@ async def _orchestrate(job_id, user_id, repo_id, image_id, span) -> None:
 
     previous_scan = await get_previous_scan(user_id, repo_id)
 
-    cve_findings, bloat_findings, base_image_analysis, compliance_findings = await asyncio.gather(
-        asyncio.wait_for(_timed(run_cve_analyst(trivy_results, inspector_results, previous_scan), "cve_analyst"), timeout=120),
-        asyncio.wait_for(_timed(run_bloat_detective(layer_data, manifest), "bloat_detective"), timeout=120),
-        asyncio.wait_for(_timed(run_base_image_strategist(manifest), "base_image_strategist"), timeout=120),
-        asyncio.wait_for(_timed(run_compliance_checker(manifest, trivy_results), "compliance_checker"), timeout=120),
-        return_exceptions=True,
-    )
+    with _tracer.start_as_current_span("agents.parallel"):
+        cve_findings, bloat_findings, base_image_analysis, compliance_findings = await asyncio.gather(
+            asyncio.wait_for(_timed(run_cve_analyst(trivy_results, inspector_results, previous_scan), "cve_analyst"), timeout=120),
+            asyncio.wait_for(_timed(run_bloat_detective(layer_data, manifest), "bloat_detective"), timeout=120),
+            asyncio.wait_for(_timed(run_base_image_strategist(manifest), "base_image_strategist"), timeout=120),
+            asyncio.wait_for(_timed(run_compliance_checker(manifest, trivy_results), "compliance_checker"), timeout=120),
+            return_exceptions=True,
+        )
     if isinstance(cve_findings, BaseException):
         logger.warning("CVE analyst failed/timed out: %s", cve_findings)
         cve_findings = []
@@ -124,10 +127,11 @@ async def _orchestrate(job_id, user_id, repo_id, image_id, span) -> None:
     await update_job_status(job_id, "running", 65, "Optimizing Dockerfile")
 
     try:
-        dockerfile_result = await asyncio.wait_for(
-            _timed(run_dockerfile_optimizer(manifest, cve_findings, bloat_findings, base_image_analysis), "dockerfile_optimizer"),
-            timeout=120,
-        )
+        with _tracer.start_as_current_span("agent.dockerfile_optimizer"):
+            dockerfile_result = await asyncio.wait_for(
+                _timed(run_dockerfile_optimizer(manifest, cve_findings, bloat_findings, base_image_analysis), "dockerfile_optimizer"),
+                timeout=120,
+            )
     except asyncio.TimeoutError:
         logger.warning("Dockerfile optimizer timed out for job %s, using empty result", job_id)
         dockerfile_result = {"original": "", "optimized": "", "changes": []}
@@ -139,10 +143,11 @@ async def _orchestrate(job_id, user_id, repo_id, image_id, span) -> None:
     all_findings = deduplicate_findings(all_findings)
 
     try:
-        risk_result = await asyncio.wait_for(
-            _timed(run_risk_scorer(cve_findings, bloat_findings, base_image_analysis, all_findings, previous_scan), "risk_scorer"),
-            timeout=120,
-        )
+        with _tracer.start_as_current_span("agent.risk_scorer"):
+            risk_result = await asyncio.wait_for(
+                _timed(run_risk_scorer(cve_findings, bloat_findings, base_image_analysis, all_findings, previous_scan), "risk_scorer"),
+                timeout=120,
+            )
     except asyncio.TimeoutError:
         logger.warning("Risk scorer timed out for job %s, using default scores", job_id)
         risk_result = {
