@@ -162,10 +162,10 @@ async def _orchestrate(job_id, user_id, repo_id, image_id, email, span) -> None:
     await update_job_status(job_id, "running", 90, "Storing results")
 
     cve_count = {
-        "critical": sum(1 for f in all_findings if f.get("severity") == "critical" and f.get("category") == "cve"),
-        "high": sum(1 for f in all_findings if f.get("severity") == "high" and f.get("category") == "cve"),
-        "medium": sum(1 for f in all_findings if f.get("severity") == "medium" and f.get("category") == "cve"),
-        "low": sum(1 for f in all_findings if f.get("severity") == "low" and f.get("category") == "cve"),
+        "critical": sum(1 for f in all_findings if f.get("severity", "").lower() == "critical" and f.get("category") == "cve"),
+        "high": sum(1 for f in all_findings if f.get("severity", "").lower() == "high" and f.get("category") == "cve"),
+        "medium": sum(1 for f in all_findings if f.get("severity", "").lower() == "medium" and f.get("category") == "cve"),
+        "low": sum(1 for f in all_findings if f.get("severity", "").lower() == "low" and f.get("category") == "cve"),
     }
 
     span.set_attribute("cve.critical", cve_count["critical"])

@@ -98,6 +98,8 @@ Analyze and return findings as JSON array."""
             f.setdefault("id", str(uuid.uuid4()))
             f.setdefault("agent", "cve_analyst")
             f.setdefault("category", "cve")
+            if "severity" in f:
+                f["severity"] = f["severity"].lower()
         return {**state, "findings": findings}
     except Exception as exc:
         logger.error("CVE analyst error: %s", exc)
