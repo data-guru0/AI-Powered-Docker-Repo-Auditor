@@ -45,7 +45,8 @@ async def _strategize_node(state: BaseImageState) -> BaseImageState:
             content=f"""Image Manifest:
 {manifest_summary}
 
-Analyze the base image and return JSON with "analysis" and "findings" keys."""
+Analyze the base image and return JSON with "analysis" and "findings" keys.
+Base your findings ONLY on what is present in the manifest. Do NOT invent findings."""
         ),
     ]
 

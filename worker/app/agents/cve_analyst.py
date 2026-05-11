@@ -20,6 +20,9 @@ actionable findings. For each CVE:
 5. Prioritize by real risk, not just CVSS score
 6. Provide the exact fix version
 
+IMPORTANT: If the scan data contains no vulnerabilities, return an empty JSON array [].
+Do NOT invent or hallucinate CVEs. Only report what is present in the scan data.
+
 Respond ONLY with a JSON array of findings. Each finding must have:
 - id, severity, category ("cve"), title, detail, evidence, impact, fix, effort, agent ("cve_analyst")
 - cvssScore, epssScore, isInKEV, isRegression"""
@@ -97,6 +100,11 @@ async def run_cve_analyst(
     inspector_data: dict,
     previous_scan: Optional[dict] = None,
 ) -> list[dict]:
+    has_trivy = bool(trivy_data.get("Results"))
+    has_inspector = bool(inspector_data.get("findings") or inspector_data.get("Results"))
+    if not has_trivy and not has_inspector:
+        logger.info("No scan data available, skipping CVE analysis")
+        return []
     result = await _graph.ainvoke(
         {
             "trivy_data": trivy_data,

@@ -54,7 +54,8 @@ async def _check_node(state: ComplianceState) -> ComplianceState:
 Trivy Scan Data (for additional context):
 {trivy_summary}
 
-Check all 8 CIS rules and return one finding per rule as a JSON array."""
+Check all 8 CIS rules and return one finding per rule as a JSON array.
+Base your findings ONLY on what is present in the manifest data. Do NOT invent findings."""
         ),
     ]
 

@@ -19,6 +19,10 @@ For each bloat source:
 4. Calculate the size impact
 5. Provide an exact fix
 
+IMPORTANT: Only report bloat that is actually visible in the layer data provided.
+If the layer data is empty or minimal, return an empty JSON array [].
+Do NOT invent findings.
+
 Respond ONLY with a JSON array. Each item must have:
 - id, severity, category ("bloat"), title, detail, evidence, impact, fix, effort, agent ("bloat_detective")
 - layerDigest, layerCommand, layerIndex, sizeImpact, isGhostFile"""
@@ -84,6 +88,9 @@ async def run_bloat_detective(
     layer_data: list[dict],
     manifest: dict,
 ) -> list[dict]:
+    if not layer_data and not manifest:
+        logger.info("No layer data available, skipping bloat analysis")
+        return []
     result = await _graph.ainvoke(
         {
             "layer_data": layer_data,
