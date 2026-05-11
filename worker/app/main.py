@@ -28,6 +28,7 @@ async def process_message(message: dict) -> None:
     repo_id = body["repo_id"]
     image_id = body.get("image_id")
     started_at = body.get("started_at", "")
+    email = body.get("email", "")
 
     logger.info("Processing scan job %s for repo %s", job_id, repo_id)
 
@@ -35,7 +36,7 @@ async def process_message(message: dict) -> None:
     await publish_progress(job_id, "running", 5, "Starting scan")
 
     try:
-        await run_orchestrator(job_id, user_id, repo_id, image_id)
+        await run_orchestrator(job_id, user_id, repo_id, image_id, email)
     except Exception as exc:
         logger.error("Scan job %s failed: %s", job_id, exc, exc_info=True)
         await update_job_status(job_id, "failed", 0, f"Error: {exc}")

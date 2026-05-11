@@ -9,7 +9,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-async def dispatch_scan_job(user_id: str, repo_id: str, image_id: str | None) -> ScanJob:
+async def dispatch_scan_job(user_id: str, repo_id: str, image_id: str | None, email: str = "") -> ScanJob:
     job_id = str(uuid.uuid4())
     started_at = datetime.now(timezone.utc).isoformat()
 
@@ -19,6 +19,7 @@ async def dispatch_scan_job(user_id: str, repo_id: str, image_id: str | None) ->
         "repo_id": repo_id,
         "image_id": image_id,
         "started_at": started_at,
+        "email": email,
     }
 
     client = get_sqs_client()

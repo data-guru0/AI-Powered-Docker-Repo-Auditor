@@ -17,7 +17,7 @@ async def start_scan(
     user: dict = Depends(scan_rate_limit),
 ) -> ScanJob:
     job = await dispatch_scan_job(
-        user["user_id"], request.repo_id, request.image_id
+        user["user_id"], request.repo_id, request.image_id, user["email"]
     )
     await send_scan_started_email(
         user["email"], request.repo_id, job.jobId

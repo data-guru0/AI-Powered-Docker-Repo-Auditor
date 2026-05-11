@@ -24,7 +24,6 @@ from app.services.dynamodb import (
 from app.services.s3 import upload_scan_report
 from app.services.websocket import publish_progress
 from app.services.ses import send_scan_completed_email
-from app.services.dynamodb import get_user_credentials
 import app.core.telemetry as tel
 import logging
 
@@ -47,6 +46,7 @@ async def run_orchestrator(
     user_id: str,
     repo_id: str,
     image_id: Optional[str],
+    email: str = "",
 ) -> None:
     if tel.scans_started:
         tel.scans_started.add(1)
@@ -58,7 +58,7 @@ async def run_orchestrator(
         attributes={"job_id": job_id, "repo_id": repo_id},
     ) as _span:
         try:
-            await _orchestrate(job_id, user_id, repo_id, image_id, _span)
+            await _orchestrate(job_id, user_id, repo_id, image_id, email, _span)
             if tel.scans_completed:
                 tel.scans_completed.add(1)
         except Exception as exc:
@@ -73,7 +73,7 @@ async def run_orchestrator(
                 tel.scan_duration.record(time.perf_counter() - _start, {"repo_id": repo_id})
 
 
-async def _orchestrate(job_id, user_id, repo_id, image_id, span) -> None:
+async def _orchestrate(job_id, user_id, repo_id, image_id, email, span) -> None:
     scan_id = str(uuid.uuid4())
     scan_date = datetime.now(timezone.utc).isoformat()
 
@@ -201,10 +201,9 @@ async def _orchestrate(job_id, user_id, repo_id, image_id, span) -> None:
     await update_job_status(job_id, "completed", 100, "Scan complete")
     await publish_progress(job_id, "completed", 100, "Scan complete")
 
-    user_info = await get_user_credentials(user_id)
-    if user_info.get("email"):
+    if email:
         await send_scan_completed_email(
-            user_info["email"],
+            email,
             repo_id,
             job_id,
             risk_result["scores"],
@@ -212,7 +211,7 @@ async def _orchestrate(job_id, user_id, repo_id, image_id, span) -> None:
             risk_result.get("executiveSummary", ""),
             risk_result.get("topActions", []),
             len(all_findings),
-            f"{user_info.get('frontend_url', '')}/dashboard/repo/{repo_id}",
+            f"http://docker-auditor-dev-frontend-1160372135.us-east-1.elb.amazonaws.com/dashboard/repo/{repo_id}",
         )
 
     logger.info("Scan job %s completed with scan_id %s", job_id, scan_id)
