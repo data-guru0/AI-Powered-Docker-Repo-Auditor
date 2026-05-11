@@ -1,0 +1,1 @@
+print("bad image running")
