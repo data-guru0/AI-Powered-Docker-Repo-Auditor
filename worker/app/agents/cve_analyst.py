@@ -36,10 +36,30 @@ class CVEState(TypedDict):
     error: Optional[str]
 
 
+def _extract_vulnerabilities(trivy_data: dict) -> list[dict]:
+    vulns = []
+    for result in trivy_data.get("Results", []):
+        target = result.get("Target", "")
+        for v in result.get("Vulnerabilities") or []:
+            vulns.append({
+                "id": v.get("VulnerabilityID", ""),
+                "pkg": v.get("PkgName", ""),
+                "installed": v.get("InstalledVersion", ""),
+                "fixed": v.get("FixedVersion", ""),
+                "severity": v.get("Severity", ""),
+                "cvss": v.get("CVSS", {}).get("nvd", {}).get("V3Score") or v.get("CVSS", {}).get("ghsa", {}).get("V3Score", 0),
+                "description": v.get("Description", "")[:200],
+                "target": target,
+            })
+    return vulns
+
+
 async def _analyze_node(state: CVEState) -> CVEState:
     llm = ChatOpenAI(model="gpt-4o", temperature=0, timeout=90)
 
-    trivy_summary = json.dumps(state["trivy_data"], indent=2)[:8000]
+    vulns = _extract_vulnerabilities(state["trivy_data"])
+    logger.info("CVE analyst received %d vulnerabilities from Trivy", len(vulns))
+    trivy_summary = json.dumps(vulns, indent=2)[:40000]
     inspector_summary = json.dumps(state["inspector_data"], indent=2)[:4000]
     prev_cves = []
     if state.get("previous_scan"):
