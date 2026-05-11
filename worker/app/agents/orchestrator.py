@@ -198,15 +198,15 @@ async def _orchestrate(job_id, user_id, repo_id, image_id, span) -> None:
 
     user_info = await get_user_credentials(user_id)
     if user_info.get("email"):
-        top_findings = [f.get("title", "") for f in all_findings[:3]]
         await send_scan_completed_email(
             user_info["email"],
             repo_id,
             job_id,
-            risk_result["scores"]["overall"],
-            cve_count["critical"],
-            cve_count["high"],
-            top_findings,
+            risk_result["scores"],
+            cve_count,
+            risk_result.get("executiveSummary", ""),
+            risk_result.get("topActions", []),
+            len(all_findings),
             f"{user_info.get('frontend_url', '')}/dashboard/repo/{repo_id}",
         )
 
