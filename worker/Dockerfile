@@ -1,14 +1,16 @@
 FROM python:3.12-slim AS base
 WORKDIR /app
 
-ENV TRIVY_VERSION=0.61.0
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     ca-certificates \
-  && curl -sL "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz" \
-     -o /tmp/trivy.tar.gz \
-  && tar -xzf /tmp/trivy.tar.gz -C /usr/local/bin trivy \
-  && rm /tmp/trivy.tar.gz \
+    gnupg \
+  && curl -fsSL https://aquasecurity.github.io/trivy-repo/deb/public.key \
+     | gpg --dearmor -o /usr/share/keyrings/trivy.gpg \
+  && echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb generic main" \
+     > /etc/apt/sources.list.d/trivy.list \
+  && apt-get update \
+  && apt-get install -y --no-install-recommends trivy \
   && rm -rf /var/lib/apt/lists/*
 
 # Pre-download Trivy vulnerability DB into /trivy-cache
