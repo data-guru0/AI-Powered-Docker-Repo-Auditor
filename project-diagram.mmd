@@ -1,0 +1,154 @@
+graph TB
+    classDef awsService fill:#FF9900,stroke:#E88000,color:#000,font-weight:bold
+    classDef appService fill:#3B82F6,stroke:#2563EB,color:#fff,font-weight:bold
+    classDef aiAgent fill:#8B5CF6,stroke:#7C3AED,color:#fff,font-weight:bold
+    classDef external fill:#374151,stroke:#9CA3AF,color:#fff
+    classDef cicd fill:#10B981,stroke:#059669,color:#fff,font-weight:bold
+    classDef scanner fill:#EF4444,stroke:#DC2626,color:#fff,font-weight:bold
+    classDef storage fill:#0EA5E9,stroke:#0284C7,color:#fff,font-weight:bold
+    classDef user fill:#F1F5F9,stroke:#94A3B8,color:#1E293B,font-weight:bold
+
+    USER(["👤 Developer / User\nBrowser"]):::user
+
+    subgraph INGRESS ["🌐 Public Entry — Internet-Facing"]
+        ALB_FE["🔀 ALB Frontend\nHTTPS · Port 80\nPublic Internet-Facing"]:::awsService
+        COGNITO["🔐 AWS Cognito\nUser Pools\nJWT · OAuth 2.0"]:::awsService
+    end
+
+    subgraph ECS ["☁️  ECS Fargate Cluster — docker-auditor"]
+        subgraph FE_SVC ["📦 Frontend Service  ·  2 Tasks"]
+            FE["⚛️  Next.js 14\nApp Router · TypeScript\nTailwindCSS · shadcn/ui\nSentry Browser SDK"]:::appService
+        end
+        subgraph BE_SVC ["🔧 Backend Service  ·  2 Tasks"]
+            ALB_BE["🔀 ALB Backend\nInternal · Port 8000"]:::awsService
+            BE["🐍 FastAPI · Python 3.12\nUvicorn · Pydantic v2\nHTTPX · boto3\nOTEL SDK · Sentry SDK"]:::appService
+        end
+        subgraph WK_SVC ["🤖 Worker Service  ·  1 Task"]
+            WK["⚙️  Async Python Worker\nSQS Consumer Loop\nLangGraph Orchestrator\nOTEL SDK · Sentry SDK"]:::appService
+        end
+    end
+
+    subgraph AGENT_PIPE ["🧠 AI Agent Pipeline — LangGraph State Machines  ·  Parallel Execution"]
+        CVE["🔒 CVE Analyst\ncve_analyst.py\nEPSS · KEV · Regression"]:::aiAgent
+        BLOAT["📦 Bloat Detective\nbloat_detective.py\nLayer Analysis"]:::aiAgent
+        BASE["🏗️  Base Image Strategist\nbase_image_strategist.py\nUpgrade Recommendations"]:::aiAgent
+        COMP["✅ Compliance Checker\ncompliance_checker.py\nCIS · NIST · PCI"]:::aiAgent
+        DOPT["📝 Dockerfile Optimizer\ndockerfile_optimizer.py\nMulti-stage · Diff"]:::aiAgent
+        RISK["📊 Risk Scorer\nrisk_scorer.py\nA–F Grade · CVSS"]:::aiAgent
+    end
+
+    subgraph SCANNERS ["🔍 Security Scanning Layer"]
+        TRIVY["🛡️  Trivy Binary\nvuln + secret scanners\nVuln DB baked in image\n--format json  --timeout 10m"]:::scanner
+        INSPECTOR["🔎 AWS Inspector v2\nECR Container CVE\nManaged Scanner"]:::awsService
+        LAM_TRIVY["λ  Trivy Lambda\nFallback if no binary\ntrivy-scanner-fn"]:::awsService
+        LAM_INSP["λ  Inspector Trigger\nStart / poll scan\ninspector-trigger-fn"]:::awsService
+    end
+
+    subgraph QUEUE ["📨 Async Job Queue"]
+        SQS["📬 SQS FIFO Queue\nscan-jobs.fifo\nMessageGroupId = repo_id\nVisibility · DLQ"]:::awsService
+    end
+
+    subgraph DATA ["💾 Data Layer"]
+        DDB[("🗄️  DynamoDB\n─────────────────\nscan-jobs\nscan-results\nusers · repositories\nuser-credentials")]:::storage
+        S3[("🪣  S3 Bucket\nscan-reports/\nFull JSON reports\nper scan_id")]:::storage
+        REDIS[("⚡ ElastiCache Redis\nWebSocket sessions\nProgress pub/sub\nConnection registry")]:::storage
+    end
+
+    subgraph REALTIME ["📡 Real-time Progress Layer"]
+        WSAPI["🔌 API Gateway\nWebSocket API\n$connect · $disconnect\n$default"]:::awsService
+        LAM_WS["λ  WebSocket Handler\nconnect / disconnect\nbroadcast progress\nws-handler-fn"]:::awsService
+    end
+
+    subgraph NOTIFY ["📢 Notifications"]
+        SES["📧 AWS SES\nScan Completed Email\nHTML template"]:::awsService
+    end
+
+    subgraph ECR_LAYER ["📦 Container Registries — ECR"]
+        ECR_FE["📦 ECR\ndocker-auditor-frontend"]:::awsService
+        ECR_BE["📦 ECR\ndocker-auditor-backend"]:::awsService
+        ECR_WK["📦 ECR\ndocker-auditor-worker"]:::awsService
+    end
+
+    subgraph INFRA_SUPPORT ["🔧 AWS Supporting Infrastructure"]
+        SECRETS["🔑 Secrets Manager\nOpenAI API Key\nSentry DSN · Grafana Token\nLangSmith Key"]:::awsService
+        CW["📋 CloudWatch\nLogs · Log Groups\nAlarms · Dashboards"]:::awsService
+        IAM["🛡️  IAM Task Roles\nECR Pull · DDB · S3\nSQS · Secrets · SES"]:::awsService
+    end
+
+    subgraph EXTERNAL ["🌍 External SaaS Services"]
+        OPENAI["🤖 OpenAI\nGPT-4o\nAll 6 agents call\ntemperature=0"]:::external
+        LANGSMITH["🔗 LangSmith\nLangGraph Tracing\nPrompt Versions\nRun Monitoring"]:::external
+        SENTRY_FE["🚨 Sentry — Frontend\nBrowser Error Tracking\nPerformance"]:::external
+        SENTRY_BE["🚨 Sentry — Backend\nPython Exception Capture\nWorker Errors"]:::external
+        GRAFANA["📈 Grafana Cloud\nOTLP Metrics + Traces\nDashboards · Alerts\nPrometheus-compat"]:::external
+    end
+
+    subgraph CICD ["🚀 CI/CD Pipeline — GitHub Actions"]
+        GH["⚙️  GitHub Actions\nci-cd.yml\nPR → Lint → Test\n→ Build → Push → Deploy"]:::cicd
+        TF["🏗️  Terraform\n13 Modules\nvpc · ecs · alb · ecr\ncognito · dynamodb\nroute53 · waf · s3\nredis · sqs · ses · iam"]:::cicd
+    end
+
+    %% User entry
+    USER -->|"HTTPS"| ALB_FE
+    USER -->|"Sign Up / Login\nOAuth 2.0"| COGNITO
+    ALB_FE --> FE
+
+    %% Frontend to Backend
+    FE -->|"REST API\n/api/v1/*"| ALB_BE
+    FE <-->|"WebSocket\nReal-time Progress\n0% → 100%"| WSAPI
+    FE -->|"JS Errors\nPerformance"| SENTRY_FE
+    ALB_BE --> BE
+
+    %% Backend logic
+    BE -->|"Verify JWT"| COGNITO
+    BE -->|"CRUD jobs\n& results"| DDB
+    BE -->|"Enqueue\nscan-jobs.fifo"| SQS
+    BE -->|"Exceptions"| SENTRY_BE
+    BE -->|"OTLP Spans\n& Metrics"| GRAFANA
+    BE -->|"Structured Logs"| CW
+
+    %% WebSocket pub/sub
+    WSAPI <--> LAM_WS
+    LAM_WS <-->|"Session registry\nConnection IDs"| REDIS
+
+    %% Worker consumes queue
+    SQS -->|"Long Poll\nMessages"| WK
+    WK -->|"Get previous scan\nStore results"| DDB
+    WK -->|"OpenAI / Sentry\nGrafana tokens"| SECRETS
+
+    %% Parallel agent fan-out
+    WK -->|"trivy_results\ninspector_results\nprevious_scan"| CVE
+    WK -->|"layer_data\nmanifest"| BLOAT
+    WK -->|"manifest"| BASE
+    WK -->|"manifest\ntrivy_results"| COMP
+
+    %% Sequential pipeline
+    CVE & BLOAT & BASE & COMP -->|"findings[]"| DOPT
+    DOPT -->|"all_findings +\ndockerfile diff"| RISK
+
+    %% LLM calls
+    CVE & BLOAT & BASE & COMP & DOPT & RISK -->|"ainvoke gpt-4o"| OPENAI
+    OPENAI -.->|"Run Tracing\nFeedback"| LANGSMITH
+
+    %% Scanners
+    WK -->|"subprocess.run\nECR task-role auth"| TRIVY
+    TRIVY -.->|"Fallback\n(no binary)"| LAM_TRIVY
+    WK -->|"Invoke"| LAM_INSP
+    LAM_INSP -->|"ECR image scan"| INSPECTOR
+
+    %% Results storage and notifications
+    WK -->|"store_scan_result"| DDB
+    WK -->|"upload_scan_report"| S3
+    WK -->|"publish_progress\n10/20/40/65/80/90/100%"| WSAPI
+    WK -->|"scan_completed_email"| SES
+    WK -->|"OTLP Spans\nAgent Durations\nCVE Counters"| GRAFANA
+    WK -->|"Structured Logs"| CW
+
+    %% CI/CD
+    GH -->|"docker build\ndocker push"| ECR_FE & ECR_BE & ECR_WK
+    GH -->|"ecs update-service\n--force-new-deployment"| ECS
+    ECR_FE -->|"Image Pull"| FE
+    ECR_BE -->|"Image Pull"| BE
+    ECR_WK -->|"Image Pull"| WK
+    TF -->|"terraform apply\nProvision all infra"| ECS & DATA & INFRA_SUPPORT & QUEUE & REALTIME
+    IAM -->|"Grants permissions"| WK & BE
