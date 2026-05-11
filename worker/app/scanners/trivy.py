@@ -8,7 +8,10 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-TRIVY_BIN = "/usr/local/bin/trivy"
+TRIVY_BIN = next(
+    (p for p in ("/usr/bin/trivy", "/usr/local/bin/trivy") if __import__("os").path.exists(p)),
+    "/usr/bin/trivy",
+)
 
 
 def _build_image_target(repo_id: str, image_id: Optional[str], user_creds: dict) -> str:
@@ -41,10 +44,12 @@ async def run_trivy_scan(
     user_creds: dict,
 ) -> dict:
     target = _build_image_target(repo_id, image_id, user_creds)
+    logger.info("Trivy scan target: %s (binary: %s)", target, TRIVY_BIN)
 
     if os.path.exists(TRIVY_BIN):
         return await _run_trivy_local(target, user_creds)
     else:
+        logger.info("Trivy binary not found at %s, falling back to Lambda", TRIVY_BIN)
         return await _run_trivy_lambda(target, user_creds)
 
 
