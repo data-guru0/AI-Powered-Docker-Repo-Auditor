@@ -34,7 +34,7 @@ User → ALB → Next.js Frontend (ECS Fargate)
     DynamoDB + S3 + ElastiCache Redis
 ```
 
-**Infrastructure:** ECS Fargate, DynamoDB, ElastiCache Redis, SQS FIFO, API Gateway WebSocket, Cognito, Secrets Manager, SES, S3 + Glacier, Lambda (Trivy), Inspector2, WAFv2, Route53, ACM, CloudWatch, X-Ray
+**Infrastructure:** ECS Fargate, DynamoDB, ElastiCache Redis, SQS FIFO, API Gateway WebSocket, Cognito, Secrets Manager, SES, S3 + Glacier, Lambda (Trivy), Inspector2, WAFv2, Route53, ACM, CloudWatch
 
 ## Prerequisites
 
@@ -384,10 +384,6 @@ Dashboard: AWS Console → CloudWatch → Dashboards → `docker-auditor-{env}`
 ### LangSmith
 
 Agent traces, prompts, and latency at https://smith.langchain.com → Project: `docker-auditor-{env}`
-
-### X-Ray
-
-Distributed traces: AWS Console → X-Ray → Traces → filter by `docker-auditor-{env}`
 
 ### Ragas evaluation
 

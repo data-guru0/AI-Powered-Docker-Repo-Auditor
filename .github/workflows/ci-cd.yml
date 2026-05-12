@@ -70,11 +70,8 @@ jobs:
           DYNAMODB_SCAN_RESULTS_TABLE: test-scan-results
           DYNAMODB_CONNECTIONS_TABLE: test-connections
           DYNAMODB_WS_CONNECTIONS_TABLE: test-ws-connections
-          DYNAMODB_EVAL_RESULTS_TABLE: test-eval-results
-          DYNAMODB_CHAT_HISTORY_TABLE: test-chat-history
           SQS_SCAN_JOBS_URL: https://sqs.us-east-1.amazonaws.com/000000000000/test.fifo
           S3_SCAN_REPORTS_BUCKET: test-scan-reports
-          S3_EVAL_REPORTS_BUCKET: test-eval-reports
           REDIS_URL: redis://localhost:6379
           SES_FROM_EMAIL: test@example.com
           SECRET_PREFIX: test/dev
@@ -116,11 +113,8 @@ jobs:
           DYNAMODB_SCAN_JOBS_TABLE: test-scan-jobs
           DYNAMODB_SCAN_RESULTS_TABLE: test-scan-results
           DYNAMODB_WS_CONNECTIONS_TABLE: test-ws-connections
-          DYNAMODB_EVAL_RESULTS_TABLE: test-eval-results
-          DYNAMODB_CHAT_HISTORY_TABLE: test-chat-history
           SQS_SCAN_JOBS_URL: https://sqs.us-east-1.amazonaws.com/000000000000/test.fifo
           S3_SCAN_REPORTS_BUCKET: test-scan-reports
-          S3_EVAL_REPORTS_BUCKET: test-eval-reports
           REDIS_URL: redis://localhost:6379
           TRIVY_LAMBDA_FUNCTION_NAME: test-trivy
           WEBSOCKET_API_ENDPOINT: https://test.execute-api.us-east-1.amazonaws.com/test
@@ -148,11 +142,7 @@ jobs:
         id: meta
         run: |
           SHA_SHORT=${GITHUB_SHA::8}
-          if [ "${{ github.ref }}" == "refs/heads/main" ]; then
-            ENV=dev
-          else
-            ENV=dev
-          fi
+          ENV=dev
           echo "frontend_tag=${SHA_SHORT}" >> "$GITHUB_OUTPUT"
           echo "backend_tag=${SHA_SHORT}" >> "$GITHUB_OUTPUT"
           echo "worker_tag=${SHA_SHORT}" >> "$GITHUB_OUTPUT"

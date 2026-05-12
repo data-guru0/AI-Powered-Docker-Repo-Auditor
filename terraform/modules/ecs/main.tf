@@ -86,8 +86,8 @@ resource "aws_iam_role_policy_attachment" "task_apigw_post" {
   policy_arn = var.apigw_post_policy_arn
 }
 
-resource "aws_iam_role_policy" "task_ses_xray" {
-  name = "${var.project_name}-${var.environment}-task-ses-xray"
+resource "aws_iam_role_policy" "task_ses" {
+  name = "${var.project_name}-${var.environment}-task-ses"
   role = aws_iam_role.task.id
   policy = jsonencode({
     Version = "2012-10-17"

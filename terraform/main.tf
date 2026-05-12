@@ -109,7 +109,6 @@ module "lambda" {
   environment        = var.environment
   vpc_id             = module.networking.vpc_id
   private_subnet_ids = module.networking.private_subnet_ids
-  trivy_image_uri    = ""
   tags               = local.common_tags
 }
 

@@ -27,10 +27,6 @@ variable "langsmith_secret_name" { type = string }
 variable "trivy_lambda_name" { type = string }
 variable "websocket_execution_arn" { type = string }
 variable "websocket_url" { type = string }
-variable "access_logs_bucket" {
-  type    = string
-  default = ""
-}
 variable "frontend_log_group" { type = string }
 variable "backend_log_group" { type = string }
 variable "worker_log_group" { type = string }

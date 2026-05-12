@@ -70,11 +70,3 @@ export interface LayerInfo {
   createdAt: string;
   mediaType: string;
 }
-
-export interface SecretFinding {
-  layerDigest: string;
-  filePath: string;
-  secretType: string;
-  evidence: string;
-  confidence: string;
-}

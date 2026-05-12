@@ -1,5 +1,4 @@
 import httpx
-import base64
 import json
 from typing import Optional
 from app.models.registry import Repository, RegistryType, ImageTag, LayerInfo

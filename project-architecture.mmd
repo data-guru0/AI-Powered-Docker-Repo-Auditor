@@ -1,460 +1,126 @@
 %%{init: {
   'theme': 'base',
   'themeVariables': {
-    'background':        '#ffffff',
-    'mainBkg':           '#ffffff',
-    'clusterBkg':        '#F8FAFC',
-    'clusterBorder':     '#94A3B8',
+    'background':          '#ffffff',
+    'mainBkg':             '#ffffff',
+    'clusterBkg':          '#F8FAFC',
+    'clusterBorder':       '#94A3B8',
     'edgeLabelBackground': '#FEF9C3',
-    'fontSize':          '12px',
-    'fontFamily':        'Segoe UI, Inter, system-ui, sans-serif',
-    'lineColor':         '#334155'
+    'fontSize':            '13px',
+    'fontFamily':          'Segoe UI, Inter, system-ui, sans-serif',
+    'lineColor':           '#334155'
   }
 }}%%
 flowchart TD
 
-    %% ─── CLASS DEFINITIONS ───────────────────────────────────────────
-    classDef aws     fill:#FF9900,stroke:#92400E,color:#000000,font-weight:bold
-    classDef app     fill:#1D4ED8,stroke:#1E3A8A,color:#FFFFFF,font-weight:bold
-    classDef agent   fill:#7C3AED,stroke:#4C1D95,color:#FFFFFF,font-weight:bold
-    classDef scanner fill:#DC2626,stroke:#7F1D1D,color:#FFFFFF,font-weight:bold
-    classDef store   fill:#0E7490,stroke:#164E63,color:#FFFFFF,font-weight:bold
+    classDef aws     fill:#FF9900,stroke:#92400E,color:#000,font-weight:bold
+    classDef app     fill:#1D4ED8,stroke:#1E3A8A,color:#fff,font-weight:bold
+    classDef agent   fill:#7C3AED,stroke:#4C1D95,color:#fff,font-weight:bold
+    classDef scanner fill:#DC2626,stroke:#7F1D1D,color:#fff,font-weight:bold
+    classDef store   fill:#0E7490,stroke:#164E63,color:#fff,font-weight:bold
     classDef ext     fill:#1E293B,stroke:#0F172A,color:#E2E8F0,font-weight:bold
-    classDef cicd    fill:#047857,stroke:#064E3B,color:#FFFFFF,font-weight:bold
+    classDef cicd    fill:#047857,stroke:#064E3B,color:#fff,font-weight:bold
     classDef person  fill:#0F172A,stroke:#334155,color:#F1F5F9,font-weight:bold
-    classDef queue   fill:#B45309,stroke:#78350F,color:#FFFFFF,font-weight:bold
-    classDef rt      fill:#0369A1,stroke:#0C4A6E,color:#FFFFFF,font-weight:bold
+    classDef queue   fill:#B45309,stroke:#78350F,color:#fff,font-weight:bold
+    classDef rt      fill:#0369A1,stroke:#0C4A6E,color:#fff,font-weight:bold
 
-    %% ═══════════════════════════════════════════════════════════════
-    %%  NODES
-    %% ═══════════════════════════════════════════════════════════════
+    USER(["👤 User / Browser"]):::person
 
-    USER(["👤 User / Browser
-    Chrome · Firefox · Safari
-    HTTPS · WSS Protocol"]):::person
-
-    %% ─── EDGE & ENTRY ────────────────────────────────────────────────
-    subgraph ENTRY ["  🌐  Edge & Entry Layer  "]
-        R53["🌍 Route 53
-        DNS A / AAAA Records
-        ACM TLS Certificate
-        yourdomain.com"]:::aws
-
-        WAF["🛡️ WAFv2 — Web ACL
-        OWASP Top 10 Rules
-        Known Bad Inputs Rule
-        Rate Limiting Rule
-        Sampled Request Logging
-        Regional — ALB Attached"]:::aws
-
-        ALB_FE["🔀 ALB — Frontend
-        Public · HTTPS Port 443
-        HTTP 80 → HTTPS Redirect
-        SSL Termination at ALB
-        Health Checks /healthz"]:::aws
+    %% ── ENTRY ────────────────────────────────────────────────────────
+    subgraph ENTRY ["  🌐  Edge & Entry  "]
+        R53["🌍 Route 53\nDNS · ACM TLS"]:::aws
+        WAF["🛡️ WAFv2\nOWASP · Rate Limit"]:::aws
+        ALB_FE["🔀 ALB — Frontend\nPublic HTTPS"]:::aws
     end
 
-    %% ─── AUTHENTICATION ──────────────────────────────────────────────
-    subgraph AUTH ["  🔐  Authentication Layer  "]
-        COGNITO["🔐 AWS Cognito User Pool
-        Pool: docker-auditor-{env}
-        Email-based Signup & Login
-        SRP Auth · JWT RS256 Tokens
-        OAuth 2.0 · PKCE Flow
-        Refresh Token TTL: 30 days
-        Password: 12+ chars · complex
-        MFA: Optional · Disabled prod"]:::aws
-
-        AMPLIFY["📱 AWS Amplify 6.3.6
-        Hosted Cognito UI Components
-        Auto Token Refresh Logic
-        @aws-amplify/ui-react 6.3.0
-        withAuthenticator HOC
-        Federated Identity Pool"]:::aws
+    %% ── AUTH ─────────────────────────────────────────────────────────
+    subgraph AUTH ["  🔐  Authentication  "]
+        COGNITO["🔐 AWS Cognito\nUser Pools · JWT\nOAuth 2.0 · SRP"]:::aws
+        AMPLIFY["📱 AWS Amplify\nAuth UI · Token Refresh\nFederated Identities"]:::aws
     end
 
-    %% ─── ECS FARGATE CLUSTER ─────────────────────────────────────────
-    subgraph ECS ["  ☁️  ECS Fargate Cluster — docker-auditor  "]
-        subgraph FE_SVC ["  📦  Frontend Service · 1–2 Tasks  "]
-            FE["⚛️ Next.js 14.2.3 — App Router
-            React 18.3.1 · TypeScript 5.4.5
-            Node.js 20 Alpine · Multi-stage Build
-            TailwindCSS 3.4.3 · PostCSS 8.4.38
-            Framer Motion 11.1.9 · Animations
-            Recharts 2.12.7 · Score Ring Charts
-            AWS Amplify 6.3.6 · Auth UI
-            @sentry/nextjs 8.28.0 · Browser SDK
-            Jest 29.7.0 · @testing-library/react
-            Playwright 1.44.0 · E2E Tests
-            ESLint 8.57.0 · Port 3000"]:::app
+    %% ── ECS FARGATE ──────────────────────────────────────────────────
+    subgraph ECS ["  ☁️  ECS Fargate Cluster  "]
+        subgraph FE_SVC ["  📦  Frontend Service  "]
+            FE["⚛️ Next.js · React · TypeScript\nTailwindCSS · Framer Motion\nRecharts · AWS Amplify\nSentry · Jest · Playwright"]:::app
         end
-
-        subgraph BE_SVC ["  🔧  Backend Service · 1–4 Tasks  "]
-            ALB_BE["🔀 ALB — Backend
-            Internal · Port 8000
-            Private VPC Only
-            No Public Exposure"]:::aws
-
-            BE["🐍 FastAPI 0.111.0 · Python 3.12-slim
-            Uvicorn 0.29.0 · 4 Async Workers
-            Pydantic v2 2.7.1 · Input Validation
-            Pydantic-Settings 2.2.1 · Env Config
-            boto3 1.34.100 · aioboto3 13.1.0
-            httpx 0.27.0 · Async HTTP Client
-            python-jose 3.3.0 · JWT Validation
-            redis-py 5.0.4 · Session Cache
-            OTEL SDK 1.24.0 · OTLP Exporter
-            Sentry SDK 2.8.0 · guardrails-ai 0.5
-            pytest 8.2.0 · pytest-asyncio 0.23.6
-            Routes: scans · images · repos · ws
-            Port 8000"]:::app
+        subgraph BE_SVC ["  🔧  Backend Service  "]
+            ALB_BE["🔀 ALB — Backend\nInternal"]:::aws
+            BE["🐍 FastAPI · Python · Uvicorn\nPydantic · boto3 · httpx\nredis-py · OpenTelemetry\nSentry · guardrails-ai"]:::app
         end
-
-        subgraph WK_SVC ["  🤖  Worker Service · 1–4 Tasks (Fargate Spot)  "]
-            WK["⚙️ Python 3.12-slim · asyncio
-            SQS FIFO Consumer Loop
-            Long Poll: 20s · Visibility: 900s
-            LangGraph 0.1.19 · State Machines
-            LangChain 0.2.6 · LLM Framework
-            langchain-openai 0.1.14 · GPT-4o
-            openai 1.35.7 · Direct API Client
-            langsmith 0.1.83 · Run Tracing
-            boto3 1.34.100 · aioboto3 13.1.0
-            redis-py 5.0.7 · Pub/Sub Progress
-            OTEL SDK 1.24.0 · Sentry SDK 2.8.0
-            guardrails-ai 0.5.10 · Output Guard
-            Trivy Binary — Preloaded in Image
-            pytest 8.2.2 · pytest-asyncio 0.23.7"]:::app
+        subgraph WK_SVC ["  🤖  Worker Service (Fargate Spot)  "]
+            WK["⚙️ Python · asyncio\nLangGraph · LangChain\nopenai · langsmith\nboto3 · redis-py\nOpenTelemetry · Sentry\nguardrails-ai · Trivy"]:::app
         end
     end
 
-    %% ─── MESSAGE QUEUE ───────────────────────────────────────────────
-    subgraph QUEUE_BOX ["  📨  Message Queue Layer  "]
-        SQS["📬 SQS FIFO Queue
-        docker-auditor-{env}-scan-jobs.fifo
-        MessageGroupId = repo_id
-        Visibility Timeout: 900s (15 min)
-        Message Retention: 24 hours
-        Deduplication: Content-based
-        Long Poll Wait Time: 20s
-        Max Message Size: 256 KB"]:::queue
-
-        DLQ["💀 Dead-Letter Queue
-        docker-auditor-{env}-scan-dlq.fifo
-        Max Receive Count: 3 Retries
-        Retention Period: 14 days
-        CloudWatch Alarm on DLQ Depth
-        SNS Email on Failed Jobs"]:::queue
+    %% ── QUEUE ────────────────────────────────────────────────────────
+    subgraph QUEUE_BOX ["  📨  Message Queue  "]
+        SQS["📬 SQS FIFO\nscan-jobs.fifo\nGroupId = repo_id"]:::queue
+        DLQ["💀 Dead-Letter Queue\n3 retries · 14-day retention"]:::queue
     end
 
-    %% ─── SECURITY SCANNING ───────────────────────────────────────────
-    subgraph SCAN ["  🔍  Security Scanning Layer  "]
-        TRIVY["🛡️ Trivy — Local Binary
-        Vulnerability + Secret Scanning
-        Vuln DB Baked into Docker Image
-        --format json · --timeout 10m
-        OS Packages + App Libraries
-        Severity: CRITICAL HIGH MEDIUM LOW
-        Reports: CVEs with fix versions"]:::scanner
-
-        LAM_TRIVY["λ Trivy Lambda — Fallback
-        trivy-scanner-fn
-        Runtime: Python 3.12
-        Memory: 1024 MB · Timeout: 300s
-        VPC Private Subnets
-        Trigger: if local binary fails"]:::aws
-
-        INSPECTOR["🔎 AWS Inspector v2
-        ECR Container CVE Scanning
-        Managed CVE Database
-        EPSS Risk Probability Scoring
-        Active Exploitability Flags
-        KEV — Known Exploited Vulns"]:::aws
-
-        LAM_INSP["λ Inspector Trigger
-        inspector-trigger-fn
-        Start + Poll ECR Scan
-        Runtime: Python 3.12 · 512 MB
-        Timeout: 60s
-        Returns: FindingsList JSON"]:::aws
+    %% ── SCANNING ─────────────────────────────────────────────────────
+    subgraph SCAN ["  🔍  Security Scanning  "]
+        TRIVY["🛡️ Trivy\nVuln + Secret Scan\nLocal Binary"]:::scanner
+        LAM_TRIVY["λ Trivy Lambda\nFallback Scanner"]:::aws
+        INSPECTOR["🔎 AWS Inspector v2\nECR CVE Scan\nEPSS · KEV"]:::aws
+        LAM_INSP["λ Inspector Trigger\nStart · Poll Scan"]:::aws
     end
 
-    %% ─── AI AGENT PIPELINE ───────────────────────────────────────────
+    %% ── AI AGENTS ────────────────────────────────────────────────────
     subgraph AGENTS ["  🧠  LangGraph AI Agent Pipeline  "]
-        ORCH["🎯 Orchestrator
-        orchestrator.py
-        asyncio.gather — Parallel Phase
-        State Machine: findings · dockerfile
-        Progress: publish 10% → 100%
-        Via WebSocket pub/sub · Redis"]:::agent
-
-        subgraph PAR ["  ⟳  Phase 1 — Parallel Execution (asyncio.gather)  "]
-            CVE["🔒 CVE Analyst
-            cve_analyst.py
-            EPSS Probability Scoring
-            KEV — Known Exploited Vulns
-            Patch Status · Regression Check
-            CVSS-weighted Criticality Rank
-            GPT-4o · temperature=0"]:::agent
-
-            BLOAT["📦 Bloat Detective
-            bloat_detective.py
-            Layer-by-Layer Analysis
-            Unneeded Package Detection
-            Artifact Size Breakdown
-            Size Reduction Recommendations
-            GPT-4o · temperature=0"]:::agent
-
-            BASE["🏗️ Base Image Strategist
-            base_image_strategist.py
-            Distroless Recommendations
-            Alpine vs Ubuntu Comparison
-            Multi-stage Build Guidance
-            Cost + Security Trade-offs
-            GPT-4o · temperature=0"]:::agent
-
-            COMP["✅ Compliance Checker
-            compliance_checker.py
-            CIS Docker Benchmark
-            NIST 800-53 Controls
-            PCI-DSS Requirements
-            Findings per Control
-            GPT-4o · temperature=0"]:::agent
+        ORCH["🎯 Orchestrator\nasyncio · LangGraph\nProgress Publisher"]:::agent
+        subgraph PAR ["  ⟳  Phase 1 — Parallel (asyncio.gather)  "]
+            CVE["🔒 CVE Analyst\nEPSS · KEV\nCVSS Ranking"]:::agent
+            BLOAT["📦 Bloat Detective\nLayer Analysis\nSize Reduction"]:::agent
+            BASE["🏗️ Base Image Strategist\nDistroless · Alpine\nUpgrade Recs"]:::agent
+            COMP["✅ Compliance Checker\nCIS · NIST 800-53\nPCI-DSS"]:::agent
         end
-
-        subgraph SEQ ["  →  Phase 2 — Sequential Pipeline  "]
-            DOPT["📝 Dockerfile Optimizer
-            dockerfile_optimizer.py
-            Multi-stage Build Refactoring
-            Layer Consolidation
-            Build Cache Optimization
-            Unified Diff Output
-            GPT-4o · temperature=0"]:::agent
-
-            RISK["📊 Risk Scorer
-            risk_scorer.py
-            A–F Letter Grade
-            A=80–100 Green · B=60–79 Yellow
-            C=40–59 Orange · D-F=0–39 Red
-            CVSS-weighted Score
-            Top 5 Actionable Fix Items
-            GPT-4o · temperature=0"]:::agent
+        subgraph SEQ ["  →  Phase 2 — Sequential  "]
+            DOPT["📝 Dockerfile Optimizer\nMulti-stage · Diff\nCache Optimization"]:::agent
+            RISK["📊 Risk Scorer\nA–F Grade · CVSS\nTop 5 Actions"]:::agent
         end
     end
 
-    %% ─── REAL-TIME LAYER ─────────────────────────────────────────────
-    subgraph RT_BOX ["  📡  Real-time WebSocket Layer  "]
-        WSAPI["🔌 API Gateway — WebSocket v2
-        docker-auditor-{env}-ws
-        Routes: $connect · $disconnect · $default
-        Route Selection: $request.body.action
-        Throttle: 1000 burst / 500 rate per sec
-        Stage Auto-deploy · CloudWatch Logs
-        HTTP_PROXY Integration → Backend ALB"]:::rt
-
-        LAM_AUTH["λ WS JWT Authorizer
-        ws-authorizer-fn
-        Validates Cognito JWT on $connect
-        Runtime: Python 3.12 · 128 MB
-        Timeout: 10s · Inline Code
-        Returns: Allow / Deny Policy Doc"]:::aws
-
-        LAM_WS["λ WebSocket Handler
-        ws-handler-fn
-        connect · disconnect · broadcast
-        Runtime: Python 3.12
-        Stores Connection IDs in Redis
-        Publishes Progress via Pub/Sub"]:::aws
+    %% ── REAL-TIME ────────────────────────────────────────────────────
+    subgraph RT_BOX ["  📡  Real-time WebSocket  "]
+        WSAPI["🔌 API Gateway WebSocket v2\n$connect · $disconnect · $default"]:::rt
+        LAM_AUTH["λ WS JWT Authorizer\nCognito Validation"]:::aws
+        LAM_WS["λ WebSocket Handler\nconnect · broadcast"]:::aws
     end
 
-    %% ─── DATA LAYER ──────────────────────────────────────────────────
-    subgraph DATA ["  💾  Data & Storage Layer  "]
-        DDB[("🗄️ DynamoDB — On-demand Billing
-        ─────────────────────────────
-        scan-jobs Table
-          PK: job_id (S)
-          GSI: UserIdIndex (user_id, created_at)
-          GSI: RepoIdIndex (repo_id, created_at)
-          TTL: expires_at · PITR: 7-day
-          KMS Encrypted
-        ─────────────────────────────
-        scan-results Table
-          PK: job_id (S)
-          GSI: RepoIdIndex (repoId, scanDate)
-          PITR Enabled · KMS Encrypted
-        ─────────────────────────────
-        ws-connections Table
-          PK: job_id + connection_id
-          TTL: 1 hour auto-expiry
-        ─────────────────────────────
-        connections Table (legacy REST)")]:::store
-
-        S3[("🪣 S3 — Scan Reports Bucket
-        docker-auditor-{env}-scan-reports-{acct}
-        Versioning: Enabled · KMS Encrypted
-        Public Access: Fully Blocked
-        ─────────────────────────────
-        Lifecycle Policy:
-          0–30d    → STANDARD Storage
-          30–90d   → STANDARD_IA
-          90–365d  → GLACIER Archive
-          365d+    → Permanent Delete
-        Multipart Abort: 7 days
-        Force Destroy: true (non-prod)")]:::store
-
-        REDIS[("⚡ ElastiCache Redis 7.0
-        docker-auditor-{env}-redis
-        Dev:  cache.t3.micro · 1 node
-        Prod: cache.r6g.large · 2 nodes
-        TLS In-transit · KMS At-rest
-        maxmemory-policy: allkeys-lru
-        notify-keyspace-events: Ex
-        Multi-AZ: Yes (prod only)
-        Backup: Daily at 04:00 UTC
-        Use Cases:
-          WebSocket Connection Registry
-          Progress Pub/Sub (job → client)
-          Session State Storage
-        Port 6379")]:::store
+    %% ── DATA ─────────────────────────────────────────────────────────
+    subgraph DATA ["  💾  Data & Storage  "]
+        DDB[("🗄️ DynamoDB\nscan-jobs · scan-results\nws-connections · KMS")]:::store
+        S3[("🪣 S3\nScan Reports\nGlacier Lifecycle · KMS")]:::store
+        REDIS[("⚡ ElastiCache Redis\nSessions · Pub/Sub\nConnection Registry")]:::store
     end
 
-    %% ─── AWS SUPPORTING SERVICES ─────────────────────────────────────
+    %% ── AWS SUPPORT ──────────────────────────────────────────────────
     subgraph SUPPORT ["  🔧  AWS Supporting Services  "]
-        SECRETS["🔑 Secrets Manager
-        docker-auditor/{env}/
-          openai-api-key (sk-proj-*)
-          langsmith-api-key (lsv2_pt_*)
-          registry-credentials/*
-            per-user Docker Hub / ECR creds
-            JSON: username · password · registry
-        KMS Encrypted · Recovery: 7 days"]:::aws
-
-        SES["📧 AWS SES
-        Scan Completed Email
-        HTML Template Rendering
-        Recipient: job submitter
-        Sandbox → Production Mode
-        SMTP + API Delivery"]:::aws
-
-        CW["📋 CloudWatch
-        Log Groups — 30-day Retention:
-          /ecs/docker-auditor-{env}/frontend
-          /ecs/docker-auditor-{env}/backend
-          /ecs/docker-auditor-{env}/worker
-          /aws/lambda/docker-auditor-{env}-*
-          /aws/apigateway/{env}-ws
-        Dashboard: CPU · Memory · SQS · DDB
-        SNS Topic: docker-auditor-{env}-alarms
-        Alarms: High CPU · DLQ Depth · 5xx"]:::aws
-
-        XRAY["🔭 AWS X-Ray
-        Distributed Tracing
-        Lambda Auto-instrumentation
-        ECS Service Map
-        Segment + Subsegment Analysis
-        Trace Sampling: 5% default"]:::aws
-
-        IAM["🛡️ IAM — Roles & Policies
-        Task Execution Role:
-          ECR Pull · CW Logs · Secrets Read
-        Task Role:
-          DynamoDB CRUD · S3 GetPut · SQS
-          Secrets Read/Write · Lambda Invoke
-          Inspector · ECR · SES · X-Ray
-        Lambda Trivy Role: ECR · Inspector
-        GitHub OIDC Deploy Role: ECS · ECR
-        GitHub OIDC Terraform Role: Full IaC"]:::aws
+        SECRETS["🔑 Secrets Manager\nOpenAI · LangSmith\nRegistry Credentials"]:::aws
+        SES["📧 AWS SES\nScan Email Notifications"]:::aws
+        CW["📋 CloudWatch\nLogs · Dashboards · Alarms\nSNS Alerts"]:::aws
+        IAM["🛡️ IAM\nTask Roles · Lambda Roles\nGitHub OIDC Roles"]:::aws
     end
 
-    %% ─── EXTERNAL SAAS ───────────────────────────────────────────────
-    subgraph SAAS ["  🌍  External SaaS Integrations  "]
-        OPENAI("🤖 OpenAI — GPT-4o
-        api.openai.com
-        temperature = 0 (deterministic)
-        Max Input: 40,000 tokens
-        async ainvoke() — all 6 agents
-        Structured JSON output
-        Guardrails validation layer"):::ext
-
-        LANGSMITH("🔗 LangSmith
-        api.smith.langchain.com
-        LangGraph Run Tracing
-        LANGCHAIN_TRACING_V2=true
-        Prompt Version Management
-        Latency + Token Cost Tracking
-        Project: docker-auditor-{env}"):::ext
-
-        SENTRY_FE("🚨 Sentry — Frontend
-        @sentry/nextjs 8.28.0
-        Browser JS Error Capture
-        Web Vitals Performance
-        Source Map Upload
-        Release + Deploy Tracking"):::ext
-
-        SENTRY_BE("🚨 Sentry — Backend & Worker
-        sentry-sdk[fastapi] 2.8.0
-        Python Exception Capture
-        FastAPI Auto-integration
-        Async Error Tracking
-        Agent Failure Alerts
-        Issue Grouping + Alerts"):::ext
-
-        GRAFANA("📈 Grafana Cloud
-        OTLP Gateway · ap-south-1
-        otlp-gateway-prod-ap-south-1
-        Auth: Base64(instanceId:apiKey)
-        Metrics: agent durations
-          CVE counters · scan latencies
-        Distributed Traces (OTLP)
-        Custom Dashboards · Alert Rules
-        On-call Routing · Incident Mgmt"):::ext
+    %% ── SAAS ─────────────────────────────────────────────────────────
+    subgraph SAAS ["  🌍  External SaaS  "]
+        OPENAI("🤖 OpenAI GPT-4o\nAll 6 Agents\ntemperature=0"):::ext
+        LANGSMITH("🔗 LangSmith\nRun Tracing\nPrompt Versioning"):::ext
+        SENTRY_FE("🚨 Sentry\nFrontend Errors\nPerformance"):::ext
+        SENTRY_BE("🚨 Sentry\nBackend · Worker\nExceptions"):::ext
+        GRAFANA("📈 Grafana Cloud\nOTLP Metrics + Traces\nDashboards · Alerts"):::ext
     end
 
-    %% ─── CI/CD PIPELINE ──────────────────────────────────────────────
+    %% ── CI/CD ────────────────────────────────────────────────────────
     subgraph CICD_BOX ["  🚀  CI / CD Pipeline  "]
-        GH["⚙️ GitHub Actions
-        ci-cd.yml + terraform.yml
-        OIDC → AWS (no static credentials)
-        ─────────────────────────────
-        ci-cd.yml Stages:
-          1. test-frontend  Node 20 · ESLint · Jest
-          2. test-backend   Python 3.12 · pytest · Redis
-          3. test-worker    Python 3.12 · pytest · Redis
-          4. build-and-push docker buildx · layer cache
-          5. deploy         ecs update-service
-             Wait: 60 × 15s rollout timeout
-        ─────────────────────────────
-        terraform.yml:
-          plan (PR) → apply (main) → destroy (manual)
-          PR Comment: plan output ≤ 65 KB"]:::cicd
-
-        TF["🏗️ Terraform — 14 Modules
-        vpc  · ecs  · alb  · ecr
-        cognito    · dynamodb  · s3
-        redis      · sqs       · ses
-        iam        · route53   · waf
-        secrets
-        ─────────────────────────────
-        Remote State: S3 + DynamoDB Locks
-        Environments: dev · staging · prod
-        tfvars per environment
-        GitHub OIDC — no static AWS keys"]:::cicd
-
-        subgraph ECR_BOX ["  📦  ECR — Container Registries  "]
-            ECR_FE["📦 ECR
-            frontend
-            Next.js 14 image
-            Lifecycle: 30d"]:::aws
-
-            ECR_BE["📦 ECR
-            backend
-            FastAPI image
-            Lifecycle: 30d"]:::aws
-
-            ECR_WK["📦 ECR
-            worker
-            Python + Trivy
-            Lifecycle: 30d"]:::aws
+        GH["⚙️ GitHub Actions\nTest → Build → Push → Deploy\nOIDC Auth · No Static Keys"]:::cicd
+        TF["🏗️ Terraform\n14 Modules · Remote State\ndev · staging · prod"]:::cicd
+        subgraph ECR_BOX ["  📦  ECR Registries  "]
+            ECR_FE["📦 ECR\nfrontend"]:::aws
+            ECR_BE["📦 ECR\nbackend"]:::aws
+            ECR_WK["📦 ECR\nworker"]:::aws
         end
     end
 
@@ -462,84 +128,69 @@ flowchart TD
     %%  CONNECTIONS
     %% ═══════════════════════════════════════════════════════════════
 
-    %% ─── User → Entry ────────────────────────────────────────────────
     USER        -->|"HTTPS"| R53
     R53         --> WAF
     WAF         --> ALB_FE
     ALB_FE      --> FE
-    USER        -->|"Login / Register\nSRP Auth · JWT"| COGNITO
+    USER        -->|"Login / Register"| COGNITO
 
-    %% ─── Auth ────────────────────────────────────────────────────────
-    FE          <-->|"Amplify SDK\nOAuth 2.0 Redirect"| AMPLIFY
-    AMPLIFY     <-->|"User Pools\nToken Vend"| COGNITO
+    FE          <-->|"Amplify SDK"| AMPLIFY
+    AMPLIFY     <-->|"User Pools"| COGNITO
 
-    %% ─── Frontend → Backend ──────────────────────────────────────────
-    FE          -->|"REST  /api/v1/*\nJWT Bearer Token"| ALB_BE
-    FE          <-->|"WebSocket\nReal-time Progress"| WSAPI
-    FE          -->|"Browser Errors\nWeb Vitals"| SENTRY_FE
+    FE          -->|"REST /api/v1/*"| ALB_BE
+    FE          <-->|"WebSocket Progress"| WSAPI
+    FE          -->|"Errors · Perf"| SENTRY_FE
     ALB_BE      --> BE
 
-    %% ─── Backend Core ────────────────────────────────────────────────
-    BE          -->|"Verify JWT\nPublic Key Fetch"| COGNITO
-    BE          -->|"CRUD scan-jobs\nscan-results · ws-connections"| DDB
-    BE          -->|"Enqueue Scan Job\nMessageGroupId = repo_id"| SQS
-    BE          -->|"Python Exceptions\nFastAPI Errors"| SENTRY_BE
-    BE          -->|"OTLP Spans\nMetrics"| GRAFANA
-    BE          -->|"Structured Logs\n/ecs/backend"| CW
-    BE          -->|"GetSecretValue\nUser Credentials"| SECRETS
+    BE          -->|"Verify JWT"| COGNITO
+    BE          -->|"CRUD Jobs & Results"| DDB
+    BE          -->|"Enqueue Scan Job"| SQS
+    BE          -->|"Exceptions"| SENTRY_BE
+    BE          -->|"OTLP Spans"| GRAFANA
+    BE          -->|"Logs"| CW
+    BE          -->|"Get API Keys"| SECRETS
 
-    %% ─── WebSocket Layer ─────────────────────────────────────────────
-    WSAPI       <-->|"$connect\nJWT Auth"| LAM_AUTH
-    WSAPI       <-->|"$disconnect\nbroadcast"| LAM_WS
-    LAM_AUTH    -->|"Verify JWT\nAllow/Deny"| COGNITO
-    LAM_WS      <-->|"Connection IDs\nPub/Sub"| REDIS
+    WSAPI       <-->|"$connect Auth"| LAM_AUTH
+    WSAPI       <-->|"broadcast"| LAM_WS
+    LAM_AUTH    -->|"Verify JWT"| COGNITO
+    LAM_WS      <-->|"Sessions · Pub/Sub"| REDIS
 
-    %% ─── Queue → Worker ──────────────────────────────────────────────
-    SQS         -->|"Long Poll 20s\nVisibility 900s"| WK
+    SQS         -->|"Long Poll"| WK
     SQS         -.->|"After 3 retries"| DLQ
 
-    %% ─── Worker Bootstrap ────────────────────────────────────────────
-    WK          -->|"GetSecretValue\nOpenAI + LangSmith"| SECRETS
-    WK          -->|"Fetch prev scan\nUpdate job status"| DDB
+    WK          -->|"Get API Keys"| SECRETS
+    WK          -->|"Fetch & Update Jobs"| DDB
 
-    %% ─── Scanning ────────────────────────────────────────────────────
-    WK          -->|"subprocess · JSON\n--timeout 10m"| TRIVY
-    TRIVY       -.->|"Fallback\nbinary missing"| LAM_TRIVY
-    WK          -->|"Invoke Lambda"| LAM_INSP
-    LAM_INSP    -->|"ECR image scan\nCVE findings"| INSPECTOR
+    WK          -->|"subprocess JSON"| TRIVY
+    TRIVY       -.->|"Fallback"| LAM_TRIVY
+    WK          -->|"Invoke"| LAM_INSP
+    LAM_INSP    -->|"ECR Scan"| INSPECTOR
 
-    %% ─── Agent Orchestration ─────────────────────────────────────────
-    WK          -->|"scan data\norchestrate agents"| ORCH
-    ORCH        -->|"trivy_results\ninspector_findings"| CVE
-    ORCH        -->|"layer_data\nmanifest"| BLOAT
-    ORCH        -->|"manifest\nbase_image"| BASE
-    ORCH        -->|"manifest +\ntrivy results"| COMP
+    WK          -->|"Orchestrate"| ORCH
+    ORCH        -->|"trivy + inspector"| CVE
+    ORCH        -->|"layer data"| BLOAT
+    ORCH        -->|"manifest"| BASE
+    ORCH        -->|"manifest + vulns"| COMP
 
-    %% ─── Sequential Pipeline ─────────────────────────────────────────
     CVE & BLOAT & BASE & COMP  -->|"findings[ ]"| DOPT
-    DOPT        -->|"all_findings +\ndockerfile diff"| RISK
+    DOPT        -->|"findings + diff"| RISK
 
-    %% ─── LLM Calls ────────────────────────────────────────────────────
-    CVE & BLOAT & BASE & COMP & DOPT & RISK  -->|"ainvoke  gpt-4o\ntemperature=0"| OPENAI
-    OPENAI      -.->|"Run Tracing\nPrompt Versions"| LANGSMITH
+    CVE & BLOAT & BASE & COMP & DOPT & RISK  -->|"ainvoke GPT-4o"| OPENAI
+    OPENAI      -.->|"Run Tracing"| LANGSMITH
 
-    %% ─── Results & Notifications ─────────────────────────────────────
-    WK          -->|"store_scan_result\nA–F Grade + JSON"| DDB
-    WK          -->|"upload_scan_report\nFull JSON report"| S3
-    WK          -->|"publish_progress\n10% → 100%"| WSAPI
-    WK          -->|"Scan Completed\nHTML Email"| SES
-    WK          -->|"OTLP · agent durations\nCVE counters · latency"| GRAFANA
-    WK          -->|"Worker Exceptions\nAgent Errors"| SENTRY_BE
-    WK          -->|"Structured Logs\n/ecs/worker"| CW
+    WK          -->|"Store Result"| DDB
+    WK          -->|"Upload Report"| S3
+    WK          -->|"Publish Progress"| WSAPI
+    WK          -->|"Email"| SES
+    WK          -->|"OTLP Metrics"| GRAFANA
+    WK          -->|"Exceptions"| SENTRY_BE
+    WK          -->|"Logs"| CW
 
-    %% ─── CI/CD ────────────────────────────────────────────────────────
-    GH          -->|"docker build · push\nmulti-stage · cache"| ECR_FE & ECR_BE & ECR_WK
-    GH          -->|"ecs update-service\nforce-new-deployment"| ECS
-    ECR_FE      -->|"image pull"| FE
-    ECR_BE      -->|"image pull"| BE
-    ECR_WK      -->|"image pull"| WK
-    TF          -->|"terraform apply\nIaC provision"| ECS & DATA & SUPPORT & RT_BOX & QUEUE_BOX & AUTH
-    IAM         -->|"Task Role\ngrant permissions"| WK & BE
+    GH          -->|"Build & Push"| ECR_FE & ECR_BE & ECR_WK
+    GH          -->|"Deploy"| ECS
+    ECR_FE      -->|"Pull"| FE
+    ECR_BE      -->|"Pull"| BE
+    ECR_WK      -->|"Pull"| WK
+    TF          -->|"Provision"| ECS & DATA & SUPPORT & RT_BOX & QUEUE_BOX & AUTH
+    IAM         -->|"Grant Permissions"| WK & BE
 
-    %% ─── Observability ────────────────────────────────────────────────
-    CW          -.->|"Metrics feed\nTrace correlation"| XRAY

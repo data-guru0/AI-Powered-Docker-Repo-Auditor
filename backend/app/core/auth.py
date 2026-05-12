@@ -3,7 +3,6 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import httpx
 from jose import jwt, JWTError
 from jose.jwk import construct as jwk_construct
-from jose.utils import base64url_decode
 from functools import lru_cache
 from app.core.config import settings
 
